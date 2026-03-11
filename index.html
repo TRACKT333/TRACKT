@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trackt – Land Pipeline</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #F4F2EE; --surface: #FFFFFF; --surface2: #EDEAE4;
+  --ink: #1A1814; --ink2: #6B6760; --ink3: #A8A49E;
+  --accent: #2D5F3F; --accent-light: #E8F0EB;
+  --amber: #C8832A; --amber-light: #FDF3E3;
+  --red: #C0392B; --red-light: #FDECEA;
+  --blue: #2563EB; --blue-light: #EFF4FF;
+  --border: #E2DED8; --sidebar: #1A1814;
+}
+body { font-family: 'DM Sans', sans-serif; background: #CCC8C2; min-height: 100vh; }
+
+/* ── SCREENS ── */
+.screen { display: none; }
+.screen.active { display: flex; }
+
+/* ── LOADING ── */
+#loading { align-items: center; justify-content: center; min-height: 100vh; flex-direction: column; gap: 12px; }
+.spinner { width: 36px; height: 36px; border: 3px solid var(–border); border-top-color: var(–accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-logo { font-family: ‘DM Mono’, monospace; font-size: 24px; color: var(–accent); }
+
+/* ── LOGIN ── */
+#login { flex-direction: row; min-height: 100vh; }
+.login-left { width: 420px; flex-shrink: 0; background: var(–sidebar); display: flex; flex-direction: column; justify-content: center; padding: 60px 48px; position: relative; overflow: hidden; }
+.login-left::before { content: ‘’; position: absolute; top: -100px; right: -100px; width: 350px; height: 350px; border-radius: 50%; background: radial-gradient(circle, rgba(45,95,63,0.2) 0%, transparent 70%); }
+.login-logo { font-family: ‘DM Mono’, monospace; font-size: 30px; font-weight: 500; color: #E8F0EB; letter-spacing: -1px; margin-bottom: 2px; }
+.login-logo-sub { font-size: 10px; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 44px; }
+.login-tagline { font-size: 24px; font-weight: 600; color: white; line-height: 1.3; margin-bottom: 14px; }
+.login-tagline em { color: #7AB897; font-style: normal; }
+.login-desc { font-size: 13px; color: rgba(255,255,255,0.4); line-height: 1.7; }
+.login-right { flex: 1; background: var(–bg); display: flex; align-items: center; justify-content: center; padding: 60px 40px; }
+.login-form { width: 100%; max-width: 360px; animation: fadeUp 0.4s ease both; }
+.login-form h2 { font-size: 20px; font-weight: 600; color: var(–ink); margin-bottom: 4px; }
+.login-form p { font-size: 13px; color: var(–ink3); margin-bottom: 28px; }
+.form-field { margin-bottom: 14px; }
+.form-field label { font-size: 11px; font-weight: 600; color: var(–ink2); display: block; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
+.form-field input { width: 100%; background: var(–surface); border: 1.5px solid var(–border); border-radius: 10px; padding: 11px 13px; font-size: 14px; font-family: ‘DM Sans’, sans-serif; color: var(–ink); outline: none; transition: border-color 0.15s; }
+.form-field input:focus { border-color: var(–accent); }
+.login-btn { width: 100%; background: var(–accent); color: white; border: none; border-radius: 10px; padding: 13px; font-size: 14px; font-weight: 600; font-family: ‘DM Sans’, sans-serif; cursor: pointer; margin-top: 6px; transition: background 0.15s; }
+.login-btn:hover { background: #245030; }
+.login-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.login-error { background: var(–red-light); border: 1px solid #F5C6C2; border-radius: 8px; padding: 10px 13px; font-size: 13px; color: var(–red); margin-bottom: 14px; display: none; }
+.login-switch { text-align: center; font-size: 12px; color: var(–ink3); margin-top: 18px; }
+.login-switch a { color: var(–accent); font-weight: 500; cursor: pointer; text-decoration: none; }
+
+/* ── BROKER APP ── */
+#broker { justify-content: center; align-items: center; padding: 40px 20px; flex-direction: column; min-height: 100vh; }
+.phone-shell { width: 375px; background: #1A1814; border-radius: 48px; padding: 14px; box-shadow: 0 40px 80px rgba(0,0,0,0.35); }
+.phone-screen { background: var(–bg); border-radius: 36px; overflow: hidden; height: 760px; overflow-y: auto; scrollbar-width: none; }
+.phone-screen::-webkit-scrollbar { display: none; }
+
+.status-bar { display: flex; justify-content: space-between; align-items: center; padding: 12px 18px 6px; background: var(–bg); position: sticky; top: 0; z-index: 10; }
+.status-time { font-size: 14px; font-weight: 600; color: var(–ink); }
+.status-right { font-size: 12px; color: var(–ink2); }
+
+.b-header { padding: 8px 18px 12px; }
+.b-header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px; }
+.b-logo { font-family: ‘DM Mono’, monospace; font-size: 19px; font-weight: 500; color: var(–accent); }
+.b-logo span { font-size: 8px; color: var(–ink3); font-family: ‘DM Sans’, sans-serif; text-transform: uppercase; letter-spacing: 1.5px; display: block; margin-top: -2px; }
+.b-avatar { width: 32px; height: 32px; background: var(–accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: white; cursor: pointer; }
+.b-greeting { font-size: 12px; color: var(–ink2); }
+.b-greeting strong { color: var(–ink); }
+
+.b-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 7px; padding: 0 18px 12px; }
+.b-stat { background: var(–surface); border: 1px solid var(–border); border-radius: 12px; padding: 10px 8px; text-align: center; }
+.b-stat-num { font-family: ‘DM Mono’, monospace; font-size: 20px; font-weight: 500; color: var(–ink); }
+.b-stat-num.green { color: var(–accent); }
+.b-stat-num.amber { color: var(–amber); }
+.b-stat-label { font-size: 9px; color: var(–ink3); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+
+.b-section-header { padding: 0 18px 8px; display: flex; justify-content: space-between; align-items: center; }
+.b-section-header h2 { font-size: 13px; font-weight: 600; color: var(–ink); }
+
+.b-parcels { padding: 0 18px; display: flex; flex-direction: column; gap: 9px; }
+.parcel-card { background: var(–surface); border: 1px solid var(–border); border-radius: 14px; padding: 12px 14px; cursor: pointer; transition: box-shadow 0.15s; animation: fadeUp 0.3s ease both; }
+.parcel-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.08); }
+.parcel-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+.parcel-address { font-size: 13px; font-weight: 600; color: var(–ink); line-height: 1.3; }
+.parcel-county { font-size: 10px; color: var(–ink3); margin-top: 1px; text-transform: uppercase; letter-spacing: 0.3px; }
+.pill { font-size: 9px; font-weight: 700; padding: 3px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap; }
+.pill-interested { background: var(–accent-light); color: var(–accent); }
+.pill-contacted { background: var(–blue-light); color: var(–blue); }
+.pill-negotiating { background: var(–amber-light); color: var(–amber); }
+.pill-responded { background: #F0FDF4; color: #16A34A; }
+.pill-closed { background: #DCFCE7; color: #15803D; }
+.pill-dead { background: var(–red-light); color: var(–red); }
+.parcel-meta { display: flex; gap: 10px; margin-bottom: 8px; }
+.meta-item { font-size: 10px; color: var(–ink2); display: flex; align-items: center; gap: 3px; }
+.meta-dot { width: 3px; height: 3px; border-radius: 50%; background: var(–ink3); }
+.parcel-footer { display: flex; justify-content: space-between; align-items: center; padding-top: 8px; border-top: 1px solid var(–border); }
+.last-contact { font-size: 10px; color: var(–ink3); }
+.last-contact strong { color: var(–ink2); }
+.action-btns { display: flex; gap: 5px; }
+.action-btn { font-size: 10px; font-weight: 600; padding: 4px 9px; border-radius: 6px; border: none; cursor: pointer; font-family: ‘DM Sans’, sans-serif; }
+.btn-log { background: var(–surface2); color: var(–ink2); }
+.btn-call { background: var(–accent); color: white; }
+
+.b-add-btn { margin: 12px 18px; background: var(–ink); color: white; border: none; border-radius: 12px; padding: 13px; width: calc(100% - 0px); font-size: 13px; font-weight: 600; font-family: ‘DM Sans’, sans-serif; cursor: pointer; }
+
+.b-bottom-nav { position: sticky; bottom: 0; background: var(–surface); border-top: 1px solid var(–border); display: flex; padding: 7px 0 14px; }
+.b-nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 9px; color: var(–ink3); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; cursor: pointer; }
+.b-nav-item.active { color: var(–accent); }
+
+.empty-state { text-align: center; padding: 40px 20px; color: var(–ink3); }
+.empty-state p { font-size: 13px; margin-top: 8px; }
+
+/* ── DETAIL ── */
+#detail { justify-content: center; align-items: center; padding: 40px 20px; flex-direction: column; min-height: 100vh; }
+.detail-hero { background: var(–accent); padding: 18px 18px 20px; color: white; }
+.detail-back { font-size: 12px; color: rgba(255,255,255,0.65); margin-bottom: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 3px; }
+.detail-back:hover { color: white; }
+.detail-address { font-size: 18px; font-weight: 600; line-height: 1.2; margin-bottom: 2px; }
+.detail-county { font-size: 11px; color: rgba(255,255,255,0.6); }
+.detail-hero-pill { display: inline-block; margin-top: 8px; background: rgba(255,255,255,0.2); color: white; font-size: 9px; font-weight: 700; padding: 3px 9px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; }
+.detail-body { padding: 14px 18px; }
+.detail-section { margin-bottom: 18px; }
+.detail-section-title { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: var(–ink3); font-weight: 700; margin-bottom: 8px; }
+.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.info-tile { background: var(–surface); border: 1px solid var(–border); border-radius: 10px; padding: 9px 11px; }
+.info-tile-label { font-size: 9px; color: var(–ink3); text-transform: uppercase; letter-spacing: 0.5px; }
+.info-tile-val { font-size: 13px; font-weight: 600; color: var(–ink); margin-top: 2px; font-family: ‘DM Mono’, monospace; }
+.status-selector { display: flex; flex-wrap: wrap; gap: 6px; }
+.status-opt { border: 1.5px solid var(–border); background: var(–surface); border-radius: 7px; padding: 6px 11px; font-size: 11px; font-weight: 600; color: var(–ink2); cursor: pointer; transition: all 0.15s; }
+.status-opt:hover { border-color: var(–accent); color: var(–accent); }
+.status-opt.selected { border-color: var(–accent); background: var(–accent-light); color: var(–accent); }
+.timeline { display: flex; flex-direction: column; }
+.tl-item { display: flex; gap: 10px; }
+.tl-line { display: flex; flex-direction: column; align-items: center; }
+.tl-dot { width: 9px; height: 9px; border-radius: 50%; background: var(–accent); flex-shrink: 0; margin-top: 3px; }
+.tl-dot.grey { background: var(–ink3); }
+.tl-connector { width: 2px; flex: 1; background: var(–border); min-height: 16px; }
+.tl-item:last-child .tl-connector { display: none; }
+.tl-content { padding-bottom: 13px; flex: 1; }
+.tl-action { font-size: 12px; font-weight: 600; color: var(–ink); }
+.tl-detail { font-size: 11px; color: var(–ink2); margin-top: 1px; }
+.tl-date { font-size: 10px; color: var(–ink3); margin-top: 1px; font-family: ‘DM Mono’, monospace; }
+.log-btn { width: 100%; background: var(–accent); color: white; border: none; border-radius: 11px; padding: 13px; font-size: 13px; font-weight: 600; font-family: ‘DM Sans’, sans-serif; cursor: pointer; margin-top: 4px; }
+
+/* ── FIRM DASHBOARD ── */
+#firm { flex-direction: column; min-height: 100vh; }
+.firm-inner { display: flex; height: 100vh; background: var(–bg); }
+.sidebar { width: 215px; background: var(–sidebar); display: flex; flex-direction: column; padding: 22px 0; flex-shrink: 0; }
+.sb-logo { padding: 0 18px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.sb-logo-text { font-family: ‘DM Mono’, monospace; font-size: 19px; font-weight: 500; color: #E8F0EB; letter-spacing: -0.5px; }
+.sb-logo-sub { font-size: 9px; color: rgba(255,255,255,0.25); text-transform: uppercase; letter-spacing: 1.5px; margin-top: 2px; }
+.sb-firm { margin: 12px 18px 0; background: rgba(255,255,255,0.06); border-radius: 7px; padding: 7px 9px; }
+.sb-firm-label { font-size: 9px; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.5px; }
+.sb-firm-name { font-size: 12px; color: rgba(255,255,255,0.85); font-weight: 500; margin-top: 1px; }
+.sb-nav { padding: 16px 0 0; flex: 1; }
+.sb-nav-label { font-size: 9px; color: rgba(255,255,255,0.22); text-transform: uppercase; letter-spacing: 1.5px; padding: 0 18px 6px; }
+.sb-nav-item { display: flex; align-items: center; gap: 8px; padding: 9px 18px; font-size: 12px; color: rgba(255,255,255,0.45); cursor: pointer; transition: all 0.15s; border-left: 2px solid transparent; }
+.sb-nav-item:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.04); }
+.sb-nav-item.active { color: #E8F0EB; background: rgba(45,95,63,0.28); border-left-color: #2D5F3F; }
+.sb-badge { margin-left: auto; background: var(–amber); color: white; font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 10px; }
+.sb-footer { padding: 14px 18px; border-top: 1px solid rgba(255,255,255,0.08); }
+.sb-user { display: flex; align-items: center; gap: 9px; }
+.sb-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(–accent); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: white; flex-shrink: 0; }
+.sb-name { font-size: 11px; color: rgba(255,255,255,0.7); font-weight: 500; }
+.sb-role { font-size: 9px; color: rgba(255,255,255,0.3); }
+.sb-signout { font-size: 11px; color: rgba(255,255,255,0.25); cursor: pointer; margin-top: 8px; }
+.sb-signout:hover { color: rgba(255,255,255,0.5); }
+.main-content { flex: 1; overflow-y: auto; scrollbar-width: none; padding: 26px 30px; }
+.main-content::-webkit-scrollbar { display: none; }
+.main-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 22px; }
+.main-title { font-size: 20px; font-weight: 600; color: var(–ink); }
+.main-subtitle { font-size: 12px; color: var(–ink3); margin-top: 2px; }
+.main-btn { background: var(–accent); color: white; border: none; border-radius: 9px; padding: 9px 15px; font-size: 12px; font-weight: 600; font-family: ‘DM Sans’, sans-serif; cursor: pointer; }
+.kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 18px; }
+.kpi-card { background: var(–surface); border: 1px solid var(–border); border-radius: 13px; padding: 14px; animation: fadeUp 0.3s ease both; }
+.kpi-label { font-size: 10px; color: var(–ink3); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
+.kpi-val { font-family: ‘DM Mono’, monospace; font-size: 26px; font-weight: 500; color: var(–ink); line-height: 1; }
+.kpi-val.green { color: var(–accent); }
+.kpi-val.amber { color: var(–amber); }
+.kpi-sub { font-size: 10px; color: var(–ink3); margin-top: 5px; }
+.kpi-up { color: var(–accent); font-weight: 600; }
+.kpi-warn { color: var(–amber); font-weight: 600; }
+.two-col { display: grid; grid-template-columns: 1fr 300px; gap: 13px; margin-bottom: 13px; }
+.card { background: var(–surface); border: 1px solid var(–border); border-radius: 13px; overflow: hidden; }
+.card-header { padding: 13px 16px 11px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(–border); }
+.card-title { font-size: 12px; font-weight: 600; color: var(–ink); }
+.card-action { font-size: 11px; color: var(–accent); font-weight: 500; cursor: pointer; }
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; color: var(–ink3); font-weight: 600; padding: 8px 14px; background: var(–bg); border-bottom: 1px solid var(–border); }
+td { padding: 10px 14px; font-size: 12px; color: var(–ink); border-bottom: 1px solid var(–border); vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #FAFAF8; }
+.broker-name { font-weight: 600; font-size: 12px; }
+.broker-type { font-size: 9px; color: var(–ink3); }
+.mini-pill { font-size: 9px; font-weight: 600; padding: 2px 7px; border-radius: 20px; text-transform: uppercase; }
+.pill-resi { background: var(–blue-light); color: var(–blue); }
+.pill-comm { background: #F3E8FF; color: #7C3AED; }
+.status-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 4px; }
+.dot-active { background: #22C55E; }
+.dot-slow { background: var(–amber); }
+.dot-inactive { background: var(–red); }
+.mono { font-family: ‘DM Mono’, monospace; font-weight: 500; }
+.pipeline-list { padding: 6px 0; }
+.pipeline-row { padding: 8px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(–border); }
+.pipeline-row:last-child { border-bottom: none; }
+.pipeline-name { font-size: 12px; color: var(–ink); font-weight: 500; }
+.pipeline-right { display: flex; align-items: center; gap: 8px; }
+.pipeline-bar-wrap { width: 60px; height: 4px; background: var(–surface2); border-radius: 3px; overflow: hidden; }
+.pipeline-bar { height: 100%; border-radius: 3px; background: var(–accent); }
+.pipeline-count { font-family: ‘DM Mono’, monospace; font-size: 12px; color: var(–ink2); width: 18px; text-align: right; }
+.activity-list { padding: 3px 0; }
+.activity-row { padding: 9px 16px; display: flex; gap: 10px; align-items: flex-start; border-bottom: 1px solid var(–border); }
+.activity-row:last-child { border-bottom: none; }
+.act-avatar { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; color: white; flex-shrink: 0; margin-top: 1px; }
+.act-text { flex: 1; font-size: 11px; color: var(–ink); line-height: 1.5; }
+.act-text strong { font-weight: 600; }
+.act-time { font-size: 10px; color: var(–ink3); font-family: ‘DM Mono’, monospace; white-space: nowrap; margin-top: 2px; }
+
+/* ── MODALS ── */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: flex-end; justify-content: center; padding: 20px; }
+.modal-overlay.open { display: flex; }
+.modal { background: var(–surface); border-radius: 18px 18px 14px 14px; width: 100%; max-width: 375px; padding: 22px 18px 28px; animation: slideUp 0.22s ease; max-height: 85vh; overflow-y: auto; }
+@keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.modal h3 { font-size: 15px; font-weight: 600; color: var(–ink); margin-bottom: 3px; }
+.modal p { font-size: 12px; color: var(–ink3); margin-bottom: 16px; }
+.modal-types { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-bottom: 13px; }
+.modal-type { border: 1.5px solid var(–border); background: var(–surface); border-radius: 9px; padding: 9px 11px; cursor: pointer; text-align: center; font-size: 12px; font-weight: 600; color: var(–ink2); transition: all 0.15s; }
+.modal-type:hover, .modal-type.selected { border-color: var(–accent); color: var(–accent); background: var(–accent-light); }
+.modal-notes { width: 100%; border: 1.5px solid var(–border); border-radius: 9px; padding: 10px 12px; font-size: 12px; font-family: ‘DM Sans’, sans-serif; color: var(–ink); resize: none; outline: none; margin-bottom: 12px; }
+.modal-notes:focus { border-color: var(–accent); }
+.modal-btns { display: flex; gap: 8px; }
+.modal-cancel { flex: 1; background: var(–surface2); color: var(–ink2); border: none; border-radius: 9px; padding: 11px; font-size: 13px; font-weight: 600; font-family: ‘DM Sans’, sans-serif; cursor: pointer; }
+.modal-save { flex: 2; background: var(–accent); color: white; border: none; border-radius: 9px; padding: 11px; font-size: 13px; font-weight: 600; font-family: ‘DM Sans’, sans-serif; cursor: pointer; }
+.modal-save:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ── TOAST ── */
+.toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(–ink); color: white; padding: 11px 18px; border-radius: 10px; font-size: 12px; font-weight: 500; opacity: 0; transition: all 0.3s; z-index: 200; white-space: nowrap; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+
+</head>
+<body>
+
+<!-- LOADING -->
+
+<div class="screen active" id="loading">
+  <div class="loading-logo">trackt</div>
+  <div class="spinner"></div>
+</div>
+
+<!-- LOGIN -->
+
+<div class="screen" id="login">
+  <div class="login-left">
+    <div class="login-logo">trackt</div>
+    <div class="login-logo-sub">Land Pipeline</div>
+    <div class="login-tagline">Every parcel.<br>Every broker.<br><em>One place.</em></div>
+    <div class="login-desc">The pipeline tool built for land acquisition teams.</div>
+  </div>
+  <div class="login-right">
+    <div class="login-form">
+      <h2 id="auth-title">Sign in to Trackt</h2>
+      <p id="auth-sub">Enter your credentials to continue</p>
+      <div class="login-error" id="auth-error"></div>
+      <div class="form-field">
+        <label>Email</label>
+        <input type="email" id="auth-email" placeholder="you@yourfirm.com">
+      </div>
+      <div class="form-field">
+        <label>Password</label>
+        <input type="password" id="auth-password" placeholder="••••••••">
+      </div>
+      <div class="form-field" id="name-field" style="display:none">
+        <label>Full Name</label>
+        <input type="text" id="auth-name" placeholder="Your name">
+      </div>
+      <button class="login-btn" id="auth-btn" onclick="handleAuth()">Sign In</button>
+      <div class="login-switch">
+        <span id="auth-switch-text">No account? </span>
+        <a onclick="toggleAuthMode()" id="auth-switch-link">Create one</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BROKER VIEW -->
+
+<div class="screen" id="broker">
+  <div class="phone-shell">
+    <div class="phone-screen">
+      <div class="status-bar">
+        <span class="status-time" id="b-time">9:41</span>
+        <span class="status-right" id="b-user-initial"></span>
+      </div>
+      <div class="b-header">
+        <div class="b-header-top">
+          <div class="b-logo">trackt<span>land pipeline</span></div>
+          <div class="b-avatar" id="b-avatar" onclick="signOut()"></div>
+        </div>
+        <div class="b-greeting">Good morning, <strong id="b-name">Broker</strong></div>
+      </div>
+      <div class="b-stats">
+        <div class="b-stat"><div class="b-stat-num green" id="s-active">0</div><div class="b-stat-label">Active</div></div>
+        <div class="b-stat"><div class="b-stat-num amber" id="s-followup">0</div><div class="b-stat-label">Follow Up</div></div>
+        <div class="b-stat"><div class="b-stat-num" id="s-interested">0</div><div class="b-stat-label">Interested</div></div>
+      </div>
+      <div class="b-section-header">
+        <h2>My Parcels</h2>
+      </div>
+      <div class="b-parcels" id="broker-parcels">
+        <div class="empty-state"><p>No parcels yet. Add your first one below.</p></div>
+      </div>
+      <button class="b-add-btn" onclick="openAddModal()">+ Add New Parcel</button>
+      <div class="b-bottom-nav">
+        <div class="b-nav-item active">Dashboard</div>
+        <div class="b-nav-item" onclick="showToast('Full parcel list coming soon')">Parcels</div>
+        <div class="b-nav-item" onclick="showToast('Pipeline coming soon')">Pipeline</div>
+        <div class="b-nav-item" onclick="signOut()">Sign Out</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL -->
+
+<div class="screen" id="detail">
+  <div class="phone-shell">
+    <div class="phone-screen">
+      <div class="status-bar">
+        <span class="status-time" id="d-time">9:41</span>
+        <span class="status-right"></span>
+      </div>
+      <div class="detail-hero">
+        <div class="detail-back" onclick="showScreen('broker'); loadBrokerParcels()">← My Parcels</div>
+        <div class="detail-address" id="d-address"></div>
+        <div class="detail-county" id="d-county"></div>
+        <div class="detail-hero-pill" id="d-pill"></div>
+      </div>
+      <div class="detail-body">
+        <div class="detail-section">
+          <div class="detail-section-title">Parcel Details</div>
+          <div class="info-grid">
+            <div class="info-tile"><div class="info-tile-label">Acreage</div><div class="info-tile-val" id="d-acres"></div></div>
+            <div class="info-tile"><div class="info-tile-label">Owner</div><div class="info-tile-val" id="d-owner"></div></div>
+            <div class="info-tile"><div class="info-tile-label">Parcel ID</div><div class="info-tile-val" id="d-pid"></div></div>
+            <div class="info-tile"><div class="info-tile-label">Added</div><div class="info-tile-val" id="d-added"></div></div>
+          </div>
+        </div>
+        <div class="detail-section">
+          <div class="detail-section-title">Update Status</div>
+          <div class="status-selector" id="status-selector"></div>
+        </div>
+        <div class="detail-section">
+          <div class="detail-section-title">Contact History</div>
+          <div class="timeline" id="d-timeline"></div>
+        </div>
+        <button class="log-btn" onclick="openLogModal()">+ Log New Contact</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FIRM DASHBOARD -->
+
+<div class="screen" id="firm">
+  <div class="firm-inner">
+    <div class="sidebar">
+      <div class="sb-logo">
+        <div class="sb-logo-text">trackt</div>
+        <div class="sb-logo-sub">Land Pipeline</div>
+      </div>
+      <div class="sb-firm">
+        <div class="sb-firm-label">Firm</div>
+        <div class="sb-firm-name" id="firm-name">JAG Acquisitions</div>
+      </div>
+      <div class="sb-nav">
+        <div class="sb-nav-label">Overview</div>
+        <div class="sb-nav-item active">Dashboard</div>
+        <div class="sb-nav-item" onclick="showToast('All parcels view coming soon')">All Parcels</div>
+        <div class="sb-nav-item" onclick="showToast('Pipeline coming soon')">Pipeline</div>
+        <div class="sb-nav-label" style="margin-top:12px">Team</div>
+        <div class="sb-nav-item" onclick="showToast('Broker management coming soon')">Brokers <span class="sb-badge" id="broker-count-badge">0</span></div>
+        <div class="sb-nav-label" style="margin-top:12px">Firm</div>
+        <div class="sb-nav-item" onclick="showToast('Reports coming soon')">Reports</div>
+        <div class="sb-nav-item" onclick="showToast('Settings coming soon')">Settings</div>
+      </div>
+      <div class="sb-footer">
+        <div class="sb-user">
+          <div class="sb-avatar" id="firm-avatar"></div>
+          <div><div class="sb-name" id="firm-admin-name"></div><div class="sb-role">Firm Admin</div></div>
+        </div>
+        <div class="sb-signout" onclick="signOut()">Sign out</div>
+      </div>
+    </div>
+    <div class="main-content">
+      <div class="main-header">
+        <div>
+          <div class="main-title" id="firm-greeting">Good morning</div>
+          <div class="main-subtitle" id="firm-date"></div>
+        </div>
+        <button class="main-btn" onclick="showToast('Invite broker coming soon')">+ Add Broker</button>
+      </div>
+      <div class="kpi-row">
+        <div class="kpi-card"><div class="kpi-label">Active Parcels</div><div class="kpi-val" id="f-parcels">0</div><div class="kpi-sub">across all brokers</div></div>
+        <div class="kpi-card"><div class="kpi-label">Active Brokers</div><div class="kpi-val" id="f-brokers">0</div><div class="kpi-sub" id="f-brokers-sub"></div></div>
+        <div class="kpi-card"><div class="kpi-label">Follow-ups Due</div><div class="kpi-val amber" id="f-followups">0</div><div class="kpi-sub"><span class="kpi-warn">Overdue 30+ days</span></div></div>
+        <div class="kpi-card"><div class="kpi-label">Interested Owners</div><div class="kpi-val green" id="f-interested">0</div><div class="kpi-sub"><span class="kpi-up">pipeline active</span></div></div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header"><div class="card-title">All Parcels</div><div class="card-action" onclick="showToast('Full view coming soon')">View all</div></div>
+          <table>
+            <thead><tr><th>Address</th><th>Broker</th><th>Status</th><th>Last Contact</th></tr></thead>
+            <tbody id="firm-parcels-table"><tr><td colspan="4" style="text-align:center;color:var(--ink3);padding:20px">Loading...</td></tr></tbody>
+          </table>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Pipeline</div></div>
+          <div class="pipeline-list" id="firm-pipeline"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">Recent Activity</div></div>
+        <div class="activity-list" id="firm-activity"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LOG MODAL -->
+
+<div class="modal-overlay" id="log-modal">
+  <div class="modal">
+    <h3>Log Contact</h3>
+    <p>How did you reach out?</p>
+    <div class="modal-types">
+      <div class="modal-type selected" onclick="selectType(this)">Phone Call</div>
+      <div class="modal-type" onclick="selectType(this)">Letter Sent</div>
+      <div class="modal-type" onclick="selectType(this)">Email</div>
+      <div class="modal-type" onclick="selectType(this)">In Person</div>
+    </div>
+    <textarea class="modal-notes" id="log-notes" rows="3" placeholder="Notes on this contact..."></textarea>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeModal('log-modal')">Cancel</button>
+      <button class="modal-save" id="log-save-btn" onclick="saveLog()">Save Log</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD PARCEL MODAL -->
+
+<div class="modal-overlay" id="add-modal">
+  <div class="modal">
+    <h3>Add New Parcel</h3>
+    <p>Enter the parcel details</p>
+    <div class="form-field"><label>Street Address</label><input type="text" id="new-address" placeholder="123 Oak Trail Rd"></div>
+    <div class="form-field"><label>County</label><input type="text" id="new-county" placeholder="e.g. Volusia County"></div>
+    <div class="form-field"><label>Acreage</label><input type="text" id="new-acres" placeholder="e.g. 8.5"></div>
+    <div class="form-field"><label>Owner Name</label><input type="text" id="new-owner" placeholder="e.g. J. Smith"></div>
+    <div class="form-field"><label>Parcel ID (optional)</label><input type="text" id="new-pid" placeholder="e.g. VL-1234"></div>
+    <div class="modal-btns" style="margin-top:8px">
+      <button class="modal-cancel" onclick="closeModal('add-modal')">Cancel</button>
+      <button class="modal-save" id="add-save-btn" onclick="saveParcel()">Add Parcel</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── SUPABASE INIT ──
+const SUPABASE_URL = 'https://drxvwrxbkdebtehuwjex.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRyeHZ3cnhia2RlYnRlaHV3amV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNjEzODMsImV4cCI6MjA4ODgzNzM4M30.7E_kacD3o070bdu8KkI9I5X8eRJZHEoSxKzgkosQLHY';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentUser = null;
+let currentProfile = null;
+let currentParcelId = null;
+let isSignUp = false;
+
+// ── INIT ──
+async function init() {
+  updateClock();
+  setInterval(updateClock, 60000);
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session) {
+    currentUser = session.user;
+    await loadProfile();
+  } else {
+    showScreen('login');
+  }
+}
+
+function updateClock() {
+  const now = new Date();
+  const t = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  ['b-time','d-time'].forEach(id => { const el = document.getElementById(id); if(el) el.textContent = t; });
+}
+
+async function loadProfile() {
+  const { data, error } = await supabase.from('profiles').select('*').eq('id', currentUser.id).single();
+  if (error || !data) {
+    // Create profile if it doesn't exist
+    const name = currentUser.user_metadata?.full_name || currentUser.email.split('@')[0];
+    const { data: newProfile } = await supabase.from('profiles').insert({ id: currentUser.id, full_name: name, role: 'broker', firm: 'JAG Acquisitions' }).select().single();
+    currentProfile = newProfile;
+  } else {
+    currentProfile = data;
+  }
+  if (currentProfile?.role === 'admin') {
+    loadFirmDashboard();
+  } else {
+    loadBrokerView();
+  }
+}
+
+// ── AUTH ──
+function toggleAuthMode() {
+  isSignUp = !isSignUp;
+  document.getElementById('auth-title').textContent = isSignUp ? 'Create your account' : 'Sign in to Trackt';
+  document.getElementById('auth-sub').textContent = isSignUp ? 'Get started with Trackt' : 'Enter your credentials to continue';
+  document.getElementById('auth-btn').textContent = isSignUp ? 'Create Account' : 'Sign In';
+  document.getElementById('auth-switch-text').textContent = isSignUp ? 'Already have an account? ' : 'No account? ';
+  document.getElementById('auth-switch-link').textContent = isSignUp ? 'Sign in' : 'Create one';
+  document.getElementById('name-field').style.display = isSignUp ? 'block' : 'none';
+  document.getElementById('auth-error').style.display = 'none';
+}
+
+async function handleAuth() {
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const btn = document.getElementById('auth-btn');
+  const errEl = document.getElementById('auth-error');
+  errEl.style.display = 'none';
+  if (!email || !password) { showAuthError('Please fill in all fields'); return; }
+  btn.disabled = true;
+  btn.textContent = isSignUp ? 'Creating...' : 'Signing in...';
+  if (isSignUp) {
+    const name = document.getElementById('auth-name').value.trim();
+    const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: name } } });
+    if (error) { showAuthError(error.message); btn.disabled = false; btn.textContent = 'Create Account'; return; }
+    currentUser = data.user;
+    // Insert profile
+    await supabase.from('profiles').insert({ id: currentUser.id, full_name: name || email.split('@')[0], role: 'broker', firm: 'JAG Acquisitions' });
+    await loadProfile();
+  } else {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) { showAuthError('Invalid email or password'); btn.disabled = false; btn.textContent = 'Sign In'; return; }
+    currentUser = data.user;
+    await loadProfile();
+  }
+  btn.disabled = false;
+}
+
+function showAuthError(msg) {
+  const el = document.getElementById('auth-error');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+async function signOut() {
+  await supabase.auth.signOut();
+  currentUser = null; currentProfile = null; currentParcelId = null;
+  showScreen('login');
+}
+
+// ── BROKER VIEW ──
+function loadBrokerView() {
+  const name = currentProfile?.full_name || 'Broker';
+  const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2);
+  document.getElementById('b-name').textContent = name.split(' ')[0];
+  document.getElementById('b-avatar').textContent = initials;
+  document.getElementById('b-user-initial').textContent = initials;
+  showScreen('broker');
+  loadBrokerParcels();
+}
+
+async function loadBrokerParcels() {
+  const container = document.getElementById('broker-parcels');
+  container.innerHTML = '<div class="empty-state"><div class="spinner" style="margin:0 auto"></div></div>';
+  const { data, error } = await supabase.from('parcels').select('*, contact_logs(*)').eq('broker_id', currentUser.id).order('created_at', { ascending: false });
+  if (error || !data || data.length === 0) {
+    container.innerHTML = '<div class="empty-state"><p>No parcels yet. Add your first one below.</p></div>';
+    document.getElementById('s-active').textContent = '0';
+    document.getElementById('s-followup').textContent = '0';
+    document.getElementById('s-interested').textContent = '0';
+    return;
+  }
+  const now = new Date();
+  let active = 0, followup = 0, interested = 0;
+  container.innerHTML = '';
+  data.forEach(p => {
+    if (!['closed','dead'].includes(p.status)) active++;
+    if (p.status === 'interested') interested++;
+    const lastLog = p.contact_logs?.sort((a,b) => new Date(b.created_at) - new Date(a.created_at))[0];
+    const lastDate = lastLog ? new Date(lastLog.created_at) : new Date(p.created_at);
+    const daysSince = Math.floor((now - lastDate) / 86400000);
+    if (daysSince >= 30 && !['closed','dead'].includes(p.status)) followup++;
+    const lastContactStr = daysSince === 0 ? 'Today' : daysSince === 1 ? 'Yesterday' : `${daysSince} days ago`;
+    const overdue = daysSince >= 30 && !['closed','dead'].includes(p.status);
+    const card = document.createElement('div');
+    card.className = 'parcel-card';
+    card.innerHTML = `
+      <div class="parcel-top">
+        <div><div class="parcel-address">${p.address}</div><div class="parcel-county">${p.county || ''}</div></div>
+        <span class="pill pill-${p.status}">${capitalize(p.status)}</span>
+      </div>
+      <div class="parcel-meta">
+        <div class="meta-item"><div class="meta-dot"></div>${p.acreage ? p.acreage + ' acres' : 'Acreage TBD'}</div>
+        <div class="meta-item"><div class="meta-dot"></div>${p.owner_name || 'Owner TBD'}</div>
+      </div>
+      <div class="parcel-footer">
+        <div class="last-contact">Last contact: <strong>${lastContactStr}${overdue ? ' !' : ''}</strong></div>
+        <div class="action-btns">
+          <button class="action-btn btn-log" onclick="event.stopPropagation(); openDetailById('${p.id}')">Log</button>
+          <button class="action-btn btn-call" onclick="event.stopPropagation(); showToast('Calling ${p.owner_name || 'owner'}...')">Call</button>
+        </div>
+      </div>`;
+    card.addEventListener('click', () => openDetailById(p.id));
+    container.appendChild(card);
+  });
+  document.getElementById('s-active').textContent = active;
+  document.getElementById('s-followup').textContent = followup;
+  document.getElementById('s-interested').textContent = interested;
+}
+
+async function openDetailById(parcelId) {
+  currentParcelId = parcelId;
+  const { data: p } = await supabase.from('parcels').select('*, contact_logs(*)').eq('id', parcelId).single();
+  if (!p) return;
+  document.getElementById('d-address').textContent = p.address;
+  document.getElementById('d-county').textContent = (p.county || '') + ', FL';
+  document.getElementById('d-pill').textContent = capitalize(p.status);
+  document.getElementById('d-acres').textContent = p.acreage ? p.acreage + ' ac' : '—';
+  document.getElementById('d-owner').textContent = p.owner_name || '—';
+  document.getElementById('d-pid').textContent = p.parcel_id || '—';
+  document.getElementById('d-added').textContent = new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  // Status selector
+  const statuses = ['contacted','responded','interested','negotiating','closed','dead'];
+  document.getElementById('status-selector').innerHTML = statuses.map(s =>
+    `<div class="status-opt ${p.status === s ? 'selected' : ''}" onclick="updateStatus('${parcelId}', '${s}', this)">${capitalize(s)}</div>`
+  ).join('');
+  // Timeline
+  const logs = (p.contact_logs || []).sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+  const tl = document.getElementById('d-timeline');
+  tl.innerHTML = '';
+  if (logs.length === 0) {
+    tl.innerHTML = '<div style="font-size:12px;color:var(--ink3)">No contact logged yet.</div>';
+  } else {
+    logs.forEach((log, i) => {
+      const item = document.createElement('div');
+      item.className = 'tl-item';
+      item.innerHTML = `
+        <div class="tl-line"><div class="tl-dot ${i > 0 ? 'grey' : ''}"></div><div class="tl-connector"></div></div>
+        <div class="tl-content">
+          <div class="tl-action">${log.contact_type}</div>
+          <div class="tl-detail">${log.notes || ''}</div>
+          <div class="tl-date">${new Date(log.created_at).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}</div>
+        </div>`;
+      tl.appendChild(item);
+    });
+  }
+  // Added entry
+  const addedItem = document.createElement('div');
+  addedItem.className = 'tl-item';
+  addedItem.innerHTML = `
+    <div class="tl-line"><div class="tl-dot grey"></div><div class="tl-connector"></div></div>
+    <div class="tl-content">
+      <div class="tl-action">Parcel Added</div>
+      <div class="tl-detail">Added to pipeline</div>
+      <div class="tl-date">${new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}</div>
+    </div>`;
+  tl.appendChild(addedItem);
+  showScreen('detail');
+}
+
+async function updateStatus(parcelId, status, el) {
+  document.querySelectorAll('.status-opt').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  await supabase.from('parcels').update({ status }).eq('id', parcelId);
+  document.getElementById('d-pill').textContent = capitalize(status);
+  // Log status change
+  await supabase.from('contact_logs').insert({ parcel_id: parcelId, broker_id: currentUser.id, contact_type: 'Status Change', notes: `Status updated to ${capitalize(status)}` });
+  showToast('Status updated to ' + capitalize(status));
+}
+
+// ── MODALS ──
+function openAddModal() { document.getElementById('add-modal').classList.add('open'); }
+function openLogModal() { document.getElementById('log-modal').classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function selectType(el) { document.querySelectorAll('.modal-type').forEach(t => t.classList.remove('selected')); el.classList.add('selected'); }
+
+async function saveParcel() {
+  const address = document.getElementById('new-address').value.trim();
+  if (!address) { showToast('Please enter an address'); return; }
+  const btn = document.getElementById('add-save-btn');
+  btn.disabled = true; btn.textContent = 'Saving...';
+  const { error } = await supabase.from('parcels').insert({
+    broker_id: currentUser.id,
+    address,
+    county: document.getElementById('new-county').value.trim(),
+    acreage: document.getElementById('new-acres').value.trim(),
+    owner_name: document.getElementById('new-owner').value.trim(),
+    parcel_id: document.getElementById('new-pid').value.trim(),
+    status: 'contacted'
+  });
+  btn.disabled = false; btn.textContent = 'Add Parcel';
+  if (error) { showToast('Error saving parcel'); return; }
+  closeModal('add-modal');
+  ['new-address','new-county','new-acres','new-owner','new-pid'].forEach(id => document.getElementById(id).value = '');
+  showToast('Parcel added successfully');
+  loadBrokerParcels();
+}
+
+async function saveLog() {
+  const type = document.querySelector('.modal-type.selected')?.textContent || 'Contact';
+  const notes = document.getElementById('log-notes').value.trim();
+  const btn = document.getElementById('log-save-btn');
+  btn.disabled = true; btn.textContent = 'Saving...';
+  const { error } = await supabase.from('contact_logs').insert({ parcel_id: currentParcelId, broker_id: currentUser.id, contact_type: type, notes });
+  btn.disabled = false; btn.textContent = 'Save Log';
+  if (error) { showToast('Error saving log'); return; }
+  closeModal('log-modal');
+  document.getElementById('log-notes').value = '';
+  showToast(type + ' logged');
+  openDetailById(currentParcelId);
+}
+
+// ── FIRM DASHBOARD ──
+async function loadFirmDashboard() {
+  const name = currentProfile?.full_name || 'Admin';
+  const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2);
+  document.getElementById('firm-admin-name').textContent = name;
+  document.getElementById('firm-avatar').textContent = initials;
+  const now = new Date();
+  document.getElementById('firm-greeting').textContent = 'Good morning, ' + name.split(' ')[0];
+  document.getElementById('firm-date').textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+  showScreen('firm');
+  // Load all parcels
+  const { data: parcels } = await supabase.from('parcels').select('*, profiles(full_name), contact_logs(*)').order('created_at', { ascending: false });
+  if (!parcels) return;
+  // KPIs
+  const active = parcels.filter(p => !['closed','dead'].includes(p.status)).length;
+  const interested = parcels.filter(p => p.status === 'interested').length;
+  const nowMs = now.getTime();
+  const followups = parcels.filter(p => {
+    if (['closed','dead'].includes(p.status)) return false;
+    const logs = p.contact_logs || [];
+    const lastDate = logs.length > 0 ? new Date(logs.sort((a,b) => new Date(b.created_at)-new Date(a.created_at))[0].created_at) : new Date(p.created_at);
+    return Math.floor((nowMs - lastDate.getTime()) / 86400000) >= 30;
+  }).length;
+  const brokerIds = [...new Set(parcels.map(p => p.broker_id))];
+  document.getElementById('f-parcels').textContent = active;
+  document.getElementById('f-brokers').textContent = brokerIds.length;
+  document.getElementById('f-followups').textContent = followups;
+  document.getElementById('f-interested').textContent = interested;
+  document.getElementById('broker-count-badge').textContent = brokerIds.length;
+  // Parcels table
+  const tbody = document.getElementById('firm-parcels-table');
+  tbody.innerHTML = '';
+  parcels.slice(0, 10).forEach(p => {
+    const logs = (p.contact_logs || []).sort((a,b) => new Date(b.created_at)-new Date(a.created_at));
+    const lastDate = logs[0] ? new Date(logs[0].created_at) : new Date(p.created_at);
+    const days = Math.floor((nowMs - lastDate.getTime()) / 86400000);
+    const lastStr = days === 0 ? 'Today' : days === 1 ? 'Yesterday' : days + ' days ago';
+    const brokerName = p.profiles?.full_name || 'Unknown';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td><div style="font-weight:600;font-size:12px">${p.address}</div><div style="font-size:10px;color:var(--ink3)">${p.county || ''}</div></td><td>${brokerName}</td><td><span class="pill pill-${p.status}">${capitalize(p.status)}</span></td><td style="font-size:11px;color:var(--ink2)">${lastStr}</td>`;
+    tbody.appendChild(tr);
+  });
+  if (parcels.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--ink3);padding:20px">No parcels yet</td></tr>';
+  }
+  // Pipeline
+  const stages = ['contacted','responded','interested','negotiating','closed','dead'];
+  const counts = {};
+  stages.forEach(s => counts[s] = parcels.filter(p => p.status === s).length);
+  const max = Math.max(...Object.values(counts), 1);
+  document.getElementById('firm-pipeline').innerHTML = stages.map(s =>
+    `<div class="pipeline-row"><div class="pipeline-name">${capitalize(s)}</div><div class="pipeline-right"><div class="pipeline-bar-wrap"><div class="pipeline-bar" style="width:${Math.round(counts[s]/max*100)}%;${s==='closed'?'background:#22C55E':s==='dead'?'background:var(--red)':''}"></div></div><div class="pipeline-count">${counts[s]}</div></div></div>`
+  ).join('');
+  // Activity feed
+  const { data: logs } = await supabase.from('contact_logs').select('*, parcels(address), profiles(full_name)').order('created_at', { ascending: false }).limit(5);
+  const actDiv = document.getElementById('firm-activity');
+  if (!logs || logs.length === 0) {
+    actDiv.innerHTML = '<div style="padding:16px;text-align:center;color:var(--ink3);font-size:12px">No activity yet</div>';
+  } else {
+    const colors = ['#2D5F3F','#2563EB','#7C3AED','#C8832A','#C0392B'];
+    actDiv.innerHTML = logs.map((log, i) => {
+      const brokerName = log.profiles?.full_name || 'Broker';
+      const initials = brokerName.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+      const timeStr = new Date(log.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+      return `<div class="activity-row"><div class="act-avatar" style="background:${colors[i%colors.length]}">${initials}</div><div class="act-text"><strong>${brokerName}</strong> logged <strong>${log.contact_type}</strong> on <strong>${log.parcels?.address || 'a parcel'}</strong>${log.notes ? ' — ' + log.notes : ''}</div><div class="act-time">${timeStr}</div></div>`;
+    }).join('');
+  }
+}
+
+// ── HELPERS ──
+function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
+function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2500); }
+
+init();
+</script>
+
+</body>
+</html>
