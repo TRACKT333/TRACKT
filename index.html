@@ -489,11 +489,19 @@ let isSignUp = false;
 async function init() {
   updateClock();
   setInterval(updateClock, 60000);
-  const { data: { session } } = await supabase.auth.getSession();
-  if (session) {
-    currentUser = session.user;
-    await loadProfile();
-  } else {
+  // Fallback: if Supabase takes more than 4 seconds, show login anyway
+  const timeout = setTimeout(() => { showScreen('login'); }, 4000);
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    clearTimeout(timeout);
+    if (session) {
+      currentUser = session.user;
+      await loadProfile();
+    } else {
+      showScreen('login');
+    }
+  } catch(e) {
+    clearTimeout(timeout);
     showScreen('login');
   }
 }
