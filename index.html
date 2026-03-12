@@ -635,8 +635,7 @@ let firmCurrentPage = 'dashboard';
 
 
 function openAdminAddParcel() {
-  // Reuse the broker add parcel modal
-  document.getElementById('add-modal').style.display = 'flex';
+  document.getElementById('add-modal').classList.add('open');
 }
 
 function toggleSidebar() {
