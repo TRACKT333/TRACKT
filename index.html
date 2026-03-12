@@ -481,11 +481,11 @@ tr:hover td { background: #FAFAF8; }
         <span>Coordinates (optional)</span>
         <a href="https://maps.google.com" target="_blank" style="font-size:10px;color:var(--accent);text-decoration:none;font-weight:500">📍 Open Google Maps →</a>
       </label>
-      <div style="display:flex;gap:8px">
-        <input type="text" id="new-lat" placeholder="Latitude e.g. 29.0212" style="flex:1">
-        <input type="text" id="new-lng" placeholder="Longitude e.g. -81.0712" style="flex:1">
-      </div>
-      <div style="font-size:10px;color:var(--ink3);margin-top:4px">In Google Maps: long-press the parcel location → copy the coordinates shown</div>
+      <input type="text" id="new-coords" placeholder="e.g. 29.1234, -81.0567" oninput="parseCoords(this.value)">
+      <div style="font-size:10px;color:var(--ink3);margin-top:4px">In Google Maps: long-press the parcel → tap the coordinates that appear → copy → paste here</div>
+      <div id="coords-preview" style="font-size:10px;color:var(--accent);margin-top:3px;display:none"></div>
+      <input type="hidden" id="new-lat">
+      <input type="hidden" id="new-lng">
     </div>
     <div class="modal-btns" style="margin-top:8px">
       <button class="modal-cancel" onclick="closeModal('add-modal')">Cancel</button>
@@ -634,6 +634,40 @@ let firmCurrentPage = 'dashboard';
 
 
 
+
+function parseCoords(val) {
+  const preview = document.getElementById('coords-preview');
+  const parts = val.split(',');
+  if (parts.length === 2) {
+    const lat = parseFloat(parts[0].trim());
+    const lng = parseFloat(parts[1].trim());
+    if (!isNaN(lat) && !isNaN(lng) && lat >= 24 && lat <= 32 && lng <= -79 && lng >= -88) {
+      document.getElementById('new-lat').value = lat;
+      document.getElementById('new-lng').value = lng;
+      preview.textContent = '✓ Valid Florida coordinates';
+      preview.style.color = 'var(--accent)';
+      preview.style.display = 'block';
+      return;
+    } else if (!isNaN(lat) && !isNaN(lng)) {
+      document.getElementById('new-lat').value = lat;
+      document.getElementById('new-lng').value = lng;
+      preview.textContent = '⚠ Coordinates saved but may be outside Florida';
+      preview.style.color = 'var(--amber)';
+      preview.style.display = 'block';
+      return;
+    }
+  }
+  document.getElementById('new-lat').value = '';
+  document.getElementById('new-lng').value = '';
+  if (val.length > 3) {
+    preview.textContent = 'Format should be: 29.1234, -81.0567';
+    preview.style.color = 'var(--ink3)';
+    preview.style.display = 'block';
+  } else {
+    preview.style.display = 'none';
+  }
+}
+
 function openAdminAddParcel() {
   document.getElementById('add-modal').classList.add('open');
 }
@@ -741,6 +775,7 @@ async function firmNav(page, parcelId) {
     + '<div>'
     + '<div class="card" style="margin-bottom:16px"><div class="card-header"><div class="card-title">Parcel Info</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div style="background:var(--surface);padding:14px"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.5px">Owner</div><div style="font-size:14px;font-weight:600;margin-top:3px">' + (p.owner_name||'—') + '</div></div><div style="background:var(--surface);padding:14px"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.5px">Acreage</div><div style="font-size:14px;font-weight:600;font-family:DM Mono,monospace;margin-top:3px">' + (p.acreage||'—') + '</div></div><div style="background:var(--surface);padding:14px"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.5px">Parcel ID</div><div style="font-size:14px;font-weight:600;font-family:DM Mono,monospace;margin-top:3px">' + (p.parcel_id||'—') + '</div></div><div style="background:var(--surface);padding:14px"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.5px">Broker</div><div style="font-size:14px;font-weight:600;margin-top:3px">' + brokerName + '</div></div><div style="background:var(--surface);padding:14px"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.5px">Last Contact</div><div style="font-size:14px;font-weight:600;margin-top:3px;color:' + (overdue?'var(--amber)':'var(--ink)') + '">' + lastStr + (overdue?' ⚠':'') + '</div></div><div style="background:var(--surface);padding:14px"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.5px">Added</div><div style="font-size:14px;font-weight:600;margin-top:3px">' + new Date(p.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) + '</div></div></div></div>'
     + '<div class="card"><div class="card-header"><div class="card-title">Update Status</div></div><div style="padding:14px;display:flex;flex-wrap:wrap;gap:7px" id="status-btns">' + statusBtns + '</div></div>'
+    + '<div class="card" style="margin-top:16px;border:1.5px solid #FEE2E2"><div style="padding:14px"><div style="font-size:12px;font-weight:600;color:#DC2626;margin-bottom:8px">Danger Zone</div><button onclick="deleteParcel(\'' + parcelId + '\')" style="background:#FEF2F2;color:#DC2626;border:1.5px solid #FECACA;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:600;font-family:DM Sans,sans-serif;cursor:pointer">🗑 Delete This Parcel</button><div style="font-size:10px;color:#9CA3AF;margin-top:6px">This cannot be undone. All contact logs will also be deleted.</div></div></div>'
     + '</div>'
     + '<div class="card"><div class="card-header"><div class="card-title">Contact History</div><div style="font-size:11px;color:var(--ink3)">' + logs.length + ' contacts</div></div><div style="padding:14px">' + timelineHtml + '<div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Added to Pipeline</div><div style="font-size:11px;color:var(--ink2)">' + new Date(p.created_at).toLocaleDateString('en-US',{month:'short',day:'2-digit',year:'numeric'}) + '</div></div></div></div>'
     + '</div>';
@@ -883,6 +918,15 @@ function apRender(parcels) {
   }).join('');
 }
 
+
+
+async function deleteParcel(parcelId) {
+  if (!confirm('Delete this parcel and all its contact logs? This cannot be undone.')) return;
+  await supabaseClient.from('contact_logs').delete().eq('parcel_id', parcelId);
+  await supabaseClient.from('parcels').delete().eq('id', parcelId);
+  showToast('Parcel deleted');
+  firmNav('parcels');
+}
 
 async function adminUpdateStatus(parcelId, status) {
   await supabaseClient.from('parcels').update({ status }).eq('id', parcelId);
@@ -1106,7 +1150,7 @@ async function saveParcel() {
   btn.disabled = false; btn.textContent = 'Add Parcel';
   if (error) { showToast('Error saving parcel'); return; }
   closeModal('add-modal');
-  ['new-address','new-county','new-acres','new-owner','new-pid','new-lat','new-lng'].forEach(id => document.getElementById(id).value = '');
+  ['new-address','new-county','new-acres','new-owner','new-pid','new-coords','new-lat','new-lng'].forEach(id => document.getElementById(id).value = ''); document.getElementById('coords-preview').style.display='none';
   showToast('Parcel added successfully');
   loadBrokerParcels();
 }
