@@ -981,7 +981,9 @@ async function loadEntityList() {
     const activeColor = e.active ? 'var(--accent)' : 'var(--ink3)';
     const activeLabel = e.active ? 'Active' : 'Inactive';
     const toggleLabel = e.active ? 'Deactivate' : 'Activate';
-    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)"><div style="font-size:13px;font-weight:500">' + e.name + '</div><div style="display:flex;align-items:center;gap:8px"><span style="font-size:10px;padding:2px 8px;border-radius:10px;background:' + activeBg + ';color:' + activeColor + '">' + activeLabel + '</span><button onclick="toggleEntity('' + e.id + '', ' + e.active + ')" style="font-size:11px;border:1px solid var(--border);border-radius:6px;padding:3px 8px;background:var(--surface);cursor:pointer;font-family:DM Sans,sans-serif">' + toggleLabel + '</button><button onclick="deleteEntity('' + e.id + '')" style="font-size:11px;border:1px solid #FECACA;border-radius:6px;padding:3px 8px;background:#FEF2F2;color:#DC2626;cursor:pointer;font-family:DM Sans,sans-serif">Delete</button></div></div>';
+    const eid = e.id;
+    const eactive = e.active;
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)"><div style="font-size:13px;font-weight:500">' + e.name + '</div><div style="display:flex;align-items:center;gap:8px"><span style="font-size:10px;padding:2px 8px;border-radius:10px;background:' + activeBg + ';color:' + activeColor + '">' + activeLabel + '</span><button onclick="toggleEntity(this.dataset.id, this.dataset.active===\'true\')" data-id="' + eid + '" data-active="' + eactive + '" style="font-size:11px;border:1px solid var(--border);border-radius:6px;padding:3px 8px;background:var(--surface);cursor:pointer;font-family:DM Sans,sans-serif">' + toggleLabel + '</button><button onclick="deleteEntity(this.dataset.id)" data-id="' + eid + '" style="font-size:11px;border:1px solid #FECACA;border-radius:6px;padding:3px 8px;background:#FEF2F2;color:#DC2626;cursor:pointer;font-family:DM Sans,sans-serif">Delete</button></div></div>';
   }).join('');
 }
 
