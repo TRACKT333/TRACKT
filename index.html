@@ -145,7 +145,7 @@ body { font-family: 'DM Sans', sans-serif; background: #CCC8C2; min-height: 100v
 
 /* ── FIRM DASHBOARD ── */
 #firm { flex-direction: column; min-height: 100vh; }
-.firm-inner { display: flex; height: 100vh; background: var(--bg); }
+.firm-inner { display: flex; height: 100vh; background: var(--bg); overflow: hidden; }
 .sidebar { width: 215px; background: var(--sidebar); display: flex; flex-direction: column; padding: 22px 0; flex-shrink: 0; }
 .sb-logo { padding: 0 18px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); }
 .sb-logo-text { font-family: 'DM Mono', monospace; font-size: 19px; font-weight: 500; color: #E8F0EB; letter-spacing: -0.5px; }
@@ -370,7 +370,7 @@ tr:hover td { background: #FAFAF8; }
       <div class="sb-nav">
         <div class="sb-nav-label">Overview</div>
         <div class="sb-nav-item active">Dashboard</div>
-        <div class="sb-nav-item" onclick="showToast('All parcels view coming soon')">All Parcels</div>
+        <div class="sb-nav-item" onclick="showAllParcelsPage()">All Parcels</div>
         <div class="sb-nav-item" onclick="showToast('Pipeline coming soon')">Pipeline</div>
         <div class="sb-nav-label" style="margin-top:12px">Team</div>
         <div class="sb-nav-item" onclick="showToast('Broker management coming soon')">Brokers <span class="sb-badge" id="broker-count-badge">0</span></div>
@@ -386,7 +386,9 @@ tr:hover td { background: #FAFAF8; }
         <div class="sb-signout" onclick="signOut()">Sign out</div>
       </div>
     </div>
-    <div class="main-content">
+    </div>
+      <div id="all-parcels-page" style="display:none;flex:1;overflow-y:auto;padding:26px 30px;scrollbar-width:none;"><div class="main-header"><div><div class="main-title">All Parcels</div><div class="main-subtitle" id="ap-subtitle">Loading...</div></div><button class="main-btn" onclick="showDashboardPage()">← Back to Dashboard</button></div><div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;"><input type="text" id="ap-search" placeholder="Search address, owner, county..." oninput="filterParcels()" style="flex:1;min-width:200px;border:1.5px solid var(--border);border-radius:9px;padding:9px 13px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--ink);outline:none;background:var(--surface);"><select id="ap-status-filter" onchange="filterParcels()" style="border:1.5px solid var(--border);border-radius:9px;padding:9px 13px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--ink);outline:none;background:var(--surface);cursor:pointer;"><option value="">All Statuses</option><option value="contacted">Contacted</option><option value="responded">Responded</option><option value="interested">Interested</option><option value="negotiating">Negotiating</option><option value="closed">Closed</option><option value="dead">Dead</option></select><select id="ap-broker-filter" onchange="filterParcels()" style="border:1.5px solid var(--border);border-radius:9px;padding:9px 13px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--ink);outline:none;background:var(--surface);cursor:pointer;"><option value="">All Brokers</option></select></div><div class="card"><table><thead><tr><th>Address</th><th>County</th><th>Acreage</th><th>Owner</th><th>Broker</th><th>Status</th><th>Last Contact</th><th>Contacts</th></tr></thead><tbody id="ap-table-body"></tbody></table></div></div>
+      <div class="main-content">
       <div class="main-header">
         <div>
           <div class="main-title" id="firm-greeting">Good morning</div>
@@ -402,7 +404,7 @@ tr:hover td { background: #FAFAF8; }
       </div>
       <div class="two-col">
         <div class="card">
-          <div class="card-header"><div class="card-title">All Parcels</div><div class="card-action" onclick="showToast('Full view coming soon')">View all</div></div>
+          <div class="card-header"><div class="card-title">All Parcels</div><div class="card-action" onclick="showAllParcelsPage()">View all</div></div>
           <table>
             <thead><tr><th>Address</th><th>Broker</th><th>Status</th><th>Last Contact</th></tr></thead>
             <tbody id="firm-parcels-table"><tr><td colspan="4" style="text-align:center;color:var(--ink3);padding:20px">Loading...</td></tr></tbody>
@@ -420,6 +422,54 @@ tr:hover td { background: #FAFAF8; }
     </div>
   </div>
 </div>
+
+
+<div id="all-parcels-page" style="display:none; flex:1; overflow-y:auto; padding:26px 30px; scrollbar-width:none;">
+  <div class="main-header">
+    <div>
+      <div class="main-title">All Parcels</div>
+      <div class="main-subtitle" id="ap-subtitle">Loading...</div>
+    </div>
+    <button class="main-btn" onclick="showDashboardPage()">← Back to Dashboard</button>
+  </div>
+  <div style="display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap;">
+    <input type="text" id="ap-search" placeholder="Search address, owner, county..." 
+      oninput="filterParcels()"
+      style="flex:1; min-width:200px; border:1.5px solid var(--border); border-radius:9px; padding:9px 13px; font-size:13px; font-family:'DM Sans',sans-serif; color:var(--ink); outline:none; background:var(--surface);">
+    <select id="ap-status-filter" onchange="filterParcels()"
+      style="border:1.5px solid var(--border); border-radius:9px; padding:9px 13px; font-size:13px; font-family:'DM Sans',sans-serif; color:var(--ink); outline:none; background:var(--surface); cursor:pointer;">
+      <option value="">All Statuses</option>
+      <option value="contacted">Contacted</option>
+      <option value="responded">Responded</option>
+      <option value="interested">Interested</option>
+      <option value="negotiating">Negotiating</option>
+      <option value="closed">Closed</option>
+      <option value="dead">Dead</option>
+    </select>
+    <select id="ap-broker-filter" onchange="filterParcels()"
+      style="border:1.5px solid var(--border); border-radius:9px; padding:9px 13px; font-size:13px; font-family:'DM Sans',sans-serif; color:var(--ink); outline:none; background:var(--surface); cursor:pointer;">
+      <option value="">All Brokers</option>
+    </select>
+  </div>
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th>Address</th>
+          <th>County</th>
+          <th>Acreage</th>
+          <th>Owner</th>
+          <th>Broker</th>
+          <th>Status</th>
+          <th>Last Contact</th>
+          <th>Contacts</th>
+        </tr>
+      </thead>
+      <tbody id="ap-table-body"></tbody>
+    </table>
+  </div>
+</div>
+
 
 <!-- LOG MODAL -->
 <div class="modal-overlay" id="log-modal">
@@ -509,6 +559,90 @@ async function loadProfile() {
     loadBrokerView();
   }
 }
+
+
+// ── ALL PARCELS PAGE ──
+let allParcelsData = [];
+
+async function showAllParcelsPage() {
+  // Hide main content, show all parcels page
+  document.querySelector('.main-content').style.display = 'none';
+  document.getElementById('all-parcels-page').style.display = 'block';
+  // Update sidebar active state
+  document.querySelectorAll('.sb-nav-item').forEach(i => i.classList.remove('active'));
+  
+  const { data: parcels } = await supabaseClient
+    .from('parcels')
+    .select('*, profiles(full_name), contact_logs(*)')
+    .order('created_at', { ascending: false });
+  
+  allParcelsData = parcels || [];
+  
+  // Populate broker filter
+  const brokerFilter = document.getElementById('ap-broker-filter');
+  const brokers = [...new Map(allParcelsData.map(p => [p.broker_id, p.profiles?.full_name || 'Unknown'])).entries()];
+  brokerFilter.innerHTML = '<option value="">All Brokers</option>' + 
+    brokers.map(([id, name]) => `<option value="${id}">${name}</option>`).join('');
+  
+  document.getElementById('ap-subtitle').textContent = `${allParcelsData.length} total parcels`;
+  renderParcelsTable(allParcelsData);
+}
+
+function filterParcels() {
+  const search = document.getElementById('ap-search').value.toLowerCase();
+  const status = document.getElementById('ap-status-filter').value;
+  const broker = document.getElementById('ap-broker-filter').value;
+  
+  let filtered = allParcelsData.filter(p => {
+    const matchSearch = !search || 
+      (p.address || '').toLowerCase().includes(search) ||
+      (p.owner_name || '').toLowerCase().includes(search) ||
+      (p.county || '').toLowerCase().includes(search);
+    const matchStatus = !status || p.status === status;
+    const matchBroker = !broker || p.broker_id === broker;
+    return matchSearch && matchStatus && matchBroker;
+  });
+  
+  document.getElementById('ap-subtitle').textContent = `${filtered.length} of ${allParcelsData.length} parcels`;
+  renderParcelsTable(filtered);
+}
+
+function renderParcelsTable(parcels) {
+  const tbody = document.getElementById('ap-table-body');
+  const now = new Date();
+  
+  if (!parcels || parcels.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--ink3);padding:24px">No parcels found</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = parcels.map(p => {
+    const logs = (p.contact_logs || []).sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+    const lastDate = logs[0] ? new Date(logs[0].created_at) : new Date(p.created_at);
+    const days = Math.floor((now - lastDate) / 86400000);
+    const lastStr = days === 0 ? 'Today' : days === 1 ? 'Yesterday' : days + 'd ago';
+    const overdue = days >= 30 && !['closed','dead'].includes(p.status);
+    const brokerName = p.profiles?.full_name || 'Unknown';
+    
+    return `<tr style="cursor:pointer" onclick="showToast('Parcel detail coming soon')">
+      <td><div style="font-weight:600;font-size:12px">${p.address}</div></td>
+      <td style="font-size:12px;color:var(--ink2)">${p.county || '—'}</td>
+      <td style="font-size:12px;font-family:'DM Mono',monospace">${p.acreage || '—'}</td>
+      <td style="font-size:12px">${p.owner_name || '—'}</td>
+      <td style="font-size:12px">${brokerName}</td>
+      <td><span class="pill pill-${p.status}">${capitalize(p.status)}</span></td>
+      <td style="font-size:11px;color:${overdue ? 'var(--amber)' : 'var(--ink2)'};font-weight:${overdue ? '600' : '400'}">${lastStr}${overdue ? ' !' : ''}</td>
+      <td style="font-size:12px;font-family:'DM Mono',monospace;text-align:center">${logs.length}</td>
+    </tr>`;
+  }).join('');
+}
+
+function showDashboardPage() {
+  document.querySelector('.main-content').style.display = 'block';
+  document.getElementById('all-parcels-page').style.display = 'none';
+  document.querySelectorAll('.sb-nav-item').forEach((i,idx) => { if(idx===0) i.classList.add('active'); });
+}
+
 
 // ── AUTH ──
 function toggleAuthMode() {
