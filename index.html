@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Trackt – Land Pipeline</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -247,13 +247,13 @@ tr:hover td { background: #FAFAF8; }
 <body>
 
 <!-- LOADING -->
-<div class="screen active" id="loading">
+<div class="screen" id="loading">
   <div class="loading-logo">trackt</div>
   <div class="spinner"></div>
 </div>
 
 <!-- LOGIN -->
-<div class="screen" id="login">
+<div class="screen" id="login" style="display:flex">
   <div class="login-left">
     <div class="login-logo">trackt</div>
     <div class="login-logo-sub">Land Pipeline</div>
@@ -480,20 +480,16 @@ let isSignUp = false;
 async function init() {
   updateClock();
   setInterval(updateClock, 60000);
-  // Fallback: if Supabase takes more than 4 seconds, show login anyway
-  const timeout = setTimeout(() => { showScreen('login'); }, 4000);
+  // Show login immediately, then check for existing session in background
+  showScreen('login');
   try {
     const { data: { session } } = await supabase.auth.getSession();
-    clearTimeout(timeout);
     if (session) {
       currentUser = session.user;
       await loadProfile();
-    } else {
-      showScreen('login');
     }
   } catch(e) {
-    clearTimeout(timeout);
-    showScreen('login');
+    // Stay on login screen
   }
 }
 
