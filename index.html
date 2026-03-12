@@ -517,6 +517,9 @@ let isAllParcelsMode = false;
 
 function navToAllParcels() {
   isAllParcelsMode = true;
+  // Update sidebar active
+  document.querySelectorAll('.sb-nav-item').forEach(i => i.classList.remove('active'));
+  document.querySelectorAll('.sb-nav-item').forEach(i => { if(i.textContent.trim().startsWith('All Parcels')) i.classList.add('active'); });
   // Update header
   document.getElementById('firm-greeting').textContent = 'All Parcels';
   document.getElementById('firm-date').textContent = 'Every parcel across all brokers';
@@ -549,6 +552,9 @@ function navToAllParcels() {
   } else {
     searchBar.style.display = 'flex';
   }
+  // Make two-col single column by hiding pipeline card
+  document.querySelector('.two-col').style.gridTemplateColumns = '1fr';
+  document.querySelectorAll('.two-col > .card').forEach((c,i) => { if(i>0) c.style.display='none'; });
   // Expand the parcels card to full width
   document.getElementById('parcels-card').style.width = '100%';
   document.getElementById('parcels-card-title').textContent = 'All Parcels';
@@ -608,8 +614,11 @@ function renderAllParcels(parcels) {
 
 function navToDashboard() {
   isAllParcelsMode = false;
+  document.querySelectorAll('.sb-nav-item').forEach((i,idx) => { i.classList.remove('active'); if(idx===0) i.classList.add('active'); });
   document.querySelector('.kpi-row').style.display = 'grid';
   document.querySelector('.two-col').style.display = 'grid';
+  document.querySelector('.two-col').style.gridTemplateColumns = '1fr 300px';
+  document.querySelectorAll('.two-col > .card').forEach(c => c.style.display='block');
   document.querySelector('.card:last-child').style.display = 'block';
   const sb = document.getElementById('ap-searchbar');
   if (sb) sb.style.display = 'none';
