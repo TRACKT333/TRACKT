@@ -718,6 +718,10 @@ async function firmNav(page, parcelId) {
         <div class="kpi-card"><div class="kpi-label">Follow-ups Due</div><div class="kpi-val amber" id="f-followups">0</div><div class="kpi-sub"><span class="kpi-warn">Overdue 30+ days</span></div></div>
         <div class="kpi-card"><div class="kpi-label">Interested Owners</div><div class="kpi-val green" id="f-interested">0</div><div class="kpi-sub"><span class="kpi-up">pipeline active</span></div></div>
       </div>
+      <div class="card map-card">
+        <div class="card-header"><div class="card-title">Parcel Map</div><div class="card-action" id="map-subtitle">Loading locations...</div></div>
+        <div id="parcel-map"></div>
+      </div>
       <div class="two-col">
         <div class="card">
           <div class="card-header"><div class="card-title">All Parcels</div><div class="card-action" onclick="firmNav('parcels')">View all →</div></div>
