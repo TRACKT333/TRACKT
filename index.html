@@ -730,7 +730,7 @@ function apRender(parcels) {
     const days = Math.floor((now - new Date(logs[0]?.created_at || p.created_at)) / 86400000);
     const lastStr = days===0?'Today':days===1?'Yesterday':days+'d ago';
     const overdue = days>=30 && !['closed','dead'].includes(p.status);
-    return `<tr>
+    return `<tr style="cursor:pointer" onclick="firmNav('parcel-detail', '${p.id}')">
       <td><div style="font-weight:600;font-size:12px">${p.address}</div><div style="font-size:10px;color:var(--ink3)">${p.parcel_id||''}</div></td>
       <td><div style="font-size:12px">${p.county||'—'}</div><div style="font-size:10px;color:var(--ink3)">${p.owner_name||''}</div></td>
       <td style="font-size:12px;font-family:'DM Mono',monospace">${p.acreage||'—'}</td>
