@@ -411,7 +411,10 @@ tr:hover td { background: #FAFAF8; }
           <div class="main-title" id="firm-greeting">Good morning</div>
           <div class="main-subtitle" id="firm-date"></div>
         </div>
-        <button class="main-btn" onclick="showToast('Invite broker coming soon')">+ Add Broker</button>
+        <div style="display:flex;gap:8px">
+          <button class="main-btn" style="background:var(--surface);color:var(--accent);border:1.5px solid var(--accent)" onclick="openAdminAddParcel()">+ Add Parcel</button>
+          <button class="main-btn" onclick="showToast('Invite broker coming soon')">+ Add Broker</button>
+        </div>
       </div>
       <div class="kpi-row">
         <div class="kpi-card"><div class="kpi-label">Active Parcels</div><div class="kpi-val" id="f-parcels">0</div><div class="kpi-sub">across all brokers</div></div>
@@ -630,6 +633,12 @@ let firmAllParcels = [];
 let firmCurrentPage = 'dashboard';
 
 
+
+function openAdminAddParcel() {
+  // Reuse the broker add parcel modal
+  document.getElementById('add-modal').style.display = 'flex';
+}
+
 function toggleSidebar() {
   const sidebar = document.getElementById('main-sidebar');
   const overlay = document.getElementById('sidebar-overlay');
@@ -656,6 +665,8 @@ async function firmNav(page, parcelId) {
   const mc = document.querySelector('.main-content');
 
   if (page === 'dashboard') {
+    // Destroy map instance so it reinitializes on the fresh DOM
+    if (leafletMap) { leafletMap.remove(); leafletMap = null; mapMarkers = []; }
     // Restore original dashboard HTML then load data
     document.querySelector('.main-content').innerHTML = `
       <div class="main-header">
@@ -663,7 +674,10 @@ async function firmNav(page, parcelId) {
           <div class="main-title" id="firm-greeting">Good morning</div>
           <div class="main-subtitle" id="firm-date"></div>
         </div>
-        <button class="main-btn" onclick="showToast('Invite broker coming soon')">+ Add Broker</button>
+        <div style="display:flex;gap:8px">
+          <button class="main-btn" style="background:var(--surface);color:var(--accent);border:1.5px solid var(--accent)" onclick="openAdminAddParcel()">+ Add Parcel</button>
+          <button class="main-btn" onclick="showToast('Invite broker coming soon')">+ Add Broker</button>
+        </div>
       </div>
       <div class="kpi-row">
         <div class="kpi-card"><div class="kpi-label">Active Parcels</div><div class="kpi-val" id="f-parcels">0</div><div class="kpi-sub">across all brokers</div></div>
@@ -800,7 +814,7 @@ async function firmNav(page, parcelId) {
           <div class="main-title">All Parcels</div>
           <div class="main-subtitle" id="ap-count">Loading...</div>
         </div>
-        <button class="main-btn" onclick="firmNav('dashboard')">← Dashboard</button>
+<div style="display:flex;gap:8px"><button class="main-btn" style="background:var(--surface);color:var(--accent);border:1.5px solid var(--accent)" onclick="openAdminAddParcel()">+ Add Parcel</button><button class="main-btn" onclick="firmNav('dashboard')">← Dashboard</button></div>
       </div>
       <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
         <input type="text" id="ap-search" placeholder="Search address, owner, county..." oninput="apFilter()"
