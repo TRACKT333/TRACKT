@@ -30,9 +30,9 @@ body { font-family: 'DM Sans', sans-serif; background: #CCC8C2; min-height: 100v
 .loading-logo { font-family: 'DM Mono', monospace; font-size: 24px; color: var(--accent); }
 
 /* ── LOGIN ── */
-#login { flex-direction: row; min-height: 100vh; }
+#login { flex-direction: row; min-height: 100vh; } @media (max-width: 600px) { #login { flex-direction: column; } .login-left { width: 100%; padding: 30px 24px 20px; min-height: auto; } }
 .login-left { width: 420px; flex-shrink: 0; background: var(--sidebar); display: flex; flex-direction: column; justify-content: center; padding: 60px 48px; position: relative; overflow: hidden; }
-.login-left::before { content: ''; position: absolute; top: -100px; right: -100px; width: 350px; height: 350px; border-radius: 50%; background: radial-gradient(circle, rgba(45,95,63,0.2) 0%, transparent 70%); }
+.login-left::before { content: ''; position: absolute; top: -100px; right: -100px; width: 350px; height: 350px; border-radius: 50%; background: radial-gradient(circle, rgba(45,95,63,0.2) 0%, transparent 70%); pointer-events: none; }
 .login-logo { font-family: 'DM Mono', monospace; font-size: 30px; font-weight: 500; color: #E8F0EB; letter-spacing: -1px; margin-bottom: 2px; }
 .login-logo-sub { font-size: 10px; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 44px; }
 .login-tagline { font-size: 24px; font-weight: 600; color: white; line-height: 1.3; margin-bottom: 14px; }
@@ -280,7 +280,7 @@ tr:hover td { background: #FAFAF8; }
       <button class="login-btn" id="auth-btn" onclick="handleAuth()">Sign In</button>
       <div class="login-switch">
         <span id="auth-switch-text">No account? </span>
-        <a onclick="toggleAuthMode()" id="auth-switch-link">Create one</a>
+        <button onclick="toggleAuthMode()" id="auth-switch-link" style="background:none;border:none;color:var(--accent);font-weight:500;font-size:12px;cursor:pointer;font-family:DM Sans,sans-serif;padding:0">Create one</button>
       </div>
     </div>
   </div>
