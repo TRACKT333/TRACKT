@@ -531,21 +531,30 @@ async function handleAuth() {
   if (!email || !password) { showAuthError('Please fill in all fields'); return; }
   btn.disabled = true;
   btn.textContent = isSignUp ? 'Creating...' : 'Signing in...';
-  if (isSignUp) {
-    const name = document.getElementById('auth-name').value.trim();
-    const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: name } } });
-    if (error) { showAuthError(error.message); btn.disabled = false; btn.textContent = 'Create Account'; return; }
-    currentUser = data.user;
-    // Insert profile
-    await supabase.from('profiles').insert({ id: currentUser.id, full_name: name || email.split('@')[0], role: 'broker', firm: 'JAG Acquisitions' });
-    await loadProfile();
-  } else {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) { showAuthError('Invalid email or password'); btn.disabled = false; btn.textContent = 'Sign In'; return; }
-    currentUser = data.user;
-    await loadProfile();
+  try {
+    if (isSignUp) {
+      const name = document.getElementById('auth-name').value.trim();
+      const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: name } } });
+      btn.disabled = false;
+      btn.textContent = 'Create Account';
+      if (error) { showAuthError(error.message); return; }
+      if (!data.user) { showAuthError('Check your email to confirm your account'); return; }
+      currentUser = data.user;
+      await supabase.from('profiles').insert({ id: currentUser.id, full_name: name || email.split('@')[0], role: 'broker', firm: 'JAG Acquisitions' });
+      await loadProfile();
+    } else {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      btn.disabled = false;
+      btn.textContent = 'Sign In';
+      if (error) { showAuthError('Invalid email or password'); return; }
+      currentUser = data.user;
+      await loadProfile();
+    }
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = isSignUp ? 'Create Account' : 'Sign In';
+    showAuthError('Connection error. Please try again.');
   }
-  btn.disabled = false;
 }
 
 function showAuthError(msg) {
