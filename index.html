@@ -422,6 +422,30 @@ tr:hover td { background: #FAFAF8; }
         <div class="kpi-card"><div class="kpi-label">Follow-ups Due</div><div class="kpi-val amber" id="f-followups">0</div><div class="kpi-sub"><span class="kpi-warn">Overdue 30+ days</span></div></div>
         <div class="kpi-card"><div class="kpi-label">Interested Owners</div><div class="kpi-val green" id="f-interested">0</div><div class="kpi-sub"><span class="kpi-up">pipeline active</span></div></div>
       </div>
+      <div class="kpi-row" id="price-kpi-row" style="margin-top:-4px">
+        <div class="kpi-card" style="border-top:3px solid #15803D">
+          <div class="kpi-label">Total Buying</div>
+          <div class="kpi-val green" id="f-buying-val">$0</div>
+          <div class="kpi-sub" id="f-buying-sub">0 parcels</div>
+        </div>
+        <div class="kpi-card" style="border-top:3px solid #2563EB">
+          <div class="kpi-label">Total Selling</div>
+          <div class="kpi-val" style="color:#2563EB" id="f-selling-val">$0</div>
+          <div class="kpi-sub" id="f-selling-sub">0 parcels</div>
+        </div>
+      </div>
+      <div class="kpi-row" id="price-kpi-row" style="margin-top:-4px">
+        <div class="kpi-card" style="border-top:3px solid #15803D">
+          <div class="kpi-label">Total Buying</div>
+          <div class="kpi-val green" id="f-buying-val">$0</div>
+          <div class="kpi-sub" id="f-buying-sub">0 parcels</div>
+        </div>
+        <div class="kpi-card" style="border-top:3px solid #2563EB">
+          <div class="kpi-label">Total Selling</div>
+          <div class="kpi-val" style="color:#2563EB" id="f-selling-val">$0</div>
+          <div class="kpi-sub" id="f-selling-sub">0 parcels</div>
+        </div>
+      </div>
       <div class="card map-card">
         <div class="card-header"><div class="card-title">Parcel Map</div><div class="card-action" id="map-subtitle">Loading locations...</div></div>
         <div id="parcel-map"></div>
@@ -478,11 +502,18 @@ tr:hover td { background: #FAFAF8; }
     <div class="form-field"><label>Parcel ID (optional)</label><input type="text" id="new-pid" placeholder="e.g. VL-1234"></div>
     <div class="form-field">
       <label>Transaction Type</label>
-      <select id="new-entity-role" style="width:100%;border:1.5px solid var(--border);border-radius:9px;padding:9px 13px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--ink);outline:none;background:var(--surface)">
+      <select id="new-entity-role" onchange="onRoleChange(this.value)" style="width:100%;border:1.5px solid var(--border);border-radius:9px;padding:9px 13px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--ink);outline:none;background:var(--surface)">
         <option value="">Select buying or selling...</option>
         <option value="buying">Buying</option>
         <option value="selling">Selling</option>
       </select>
+    </div>
+    <div class="form-field" id="price-field" style="display:none">
+      <label id="price-label">Purchase Price</label>
+      <div style="position:relative">
+        <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--ink3);font-size:13px">$</span>
+        <input type="number" id="new-price" placeholder="e.g. 250000" min="0" style="padding-left:26px;width:100%;box-sizing:border-box">
+      </div>
     </div>
     <div class="form-field">
       <label style="display:flex;justify-content:space-between;align-items:center">
@@ -669,6 +700,25 @@ async function loadEntities() {
   }
 }
 
+
+
+function formatPrice(val) {
+  if (!val) return null;
+  const n = parseFloat(val);
+  if (isNaN(n)) return null;
+  if (n >= 1000000) return '$' + (n/1000000).toFixed(2).replace(/\.?0+$/, '') + 'M';
+  if (n >= 1000) return '$' + (n/1000).toFixed(0) + 'K';
+  return '$' + n.toLocaleString();
+}
+
+function onRoleChange(val) {
+  const pf = document.getElementById('price-field');
+  const pl = document.getElementById('price-label');
+  if (val === 'buying') { pf.style.display = 'block'; pl.textContent = 'Purchase Price'; }
+  else if (val === 'selling') { pf.style.display = 'block'; pl.textContent = 'Listing Price'; }
+  else { pf.style.display = 'none'; }
+}
+
 function parseCoords(val) {
   const preview = document.getElementById('coords-preview');
   const parts = val.split(',');
@@ -752,6 +802,18 @@ async function firmNav(page, parcelId) {
         <div class="kpi-card"><div class="kpi-label">Active Brokers</div><div class="kpi-val" id="f-brokers">0</div><div class="kpi-sub" id="f-brokers-sub"></div></div>
         <div class="kpi-card"><div class="kpi-label">Follow-ups Due</div><div class="kpi-val amber" id="f-followups">0</div><div class="kpi-sub"><span class="kpi-warn">Overdue 30+ days</span></div></div>
         <div class="kpi-card"><div class="kpi-label">Interested Owners</div><div class="kpi-val green" id="f-interested">0</div><div class="kpi-sub"><span class="kpi-up">pipeline active</span></div></div>
+      </div>
+      <div class="kpi-row" id="price-kpi-row" style="margin-top:-4px">
+        <div class="kpi-card" style="border-top:3px solid #15803D">
+          <div class="kpi-label">Total Buying</div>
+          <div class="kpi-val green" id="f-buying-val">$0</div>
+          <div class="kpi-sub" id="f-buying-sub">0 parcels</div>
+        </div>
+        <div class="kpi-card" style="border-top:3px solid #2563EB">
+          <div class="kpi-label">Total Selling</div>
+          <div class="kpi-val" style="color:#2563EB" id="f-selling-val">$0</div>
+          <div class="kpi-sub" id="f-selling-sub">0 parcels</div>
+        </div>
       </div>
       <div class="card map-card">
         <div class="card-header"><div class="card-title">Parcel Map</div><div class="card-action" id="map-subtitle">Loading locations...</div></div>
@@ -887,7 +949,14 @@ async function firmNav(page, parcelId) {
             + (p.owner_name ? '<div style="font-size:11px;color:var(--ink2)">Owner: ' + p.owner_name + '</div>' : '')
             + (p.acreage ? '<div style="font-size:11px;color:var(--ink2);font-family:DM Mono,monospace">' + p.acreage + ' ac</div>' : '')
             + '<div style="font-size:11px;color:var(--ink2)">Broker: ' + broker + '</div>'
-            + (p.entity ? '<div style="font-size:11px;color:var(--ink2)">' + p.entity + (p.entity_role ? ' (' + p.entity_role + ')' : '') + '</div>' : '')
+            + (function() {
+              if (!p.price) return '';
+              const bg = p.entity_role === 'buying' ? '#DCFCE7' : '#DBEAFE';
+              const col = p.entity_role === 'buying' ? '#15803D' : '#2563EB';
+              const tag = p.entity_role ? '<span style="font-size:9px;font-weight:600;padding:1px 6px;border-radius:8px;background:' + bg + ';color:' + col + '">' + p.entity_role.toUpperCase() + '</span>' : '';
+              return '<div style="font-size:12px;font-weight:700;color:' + col + ';font-family:DM Mono,monospace;margin-top:2px">' + (formatPrice(p.price)||'') + ' ' + tag + '</div>';
+            })()
+            + (p.entity ? '<div style="font-size:11px;color:var(--ink2)">' + p.entity + '</div>' : '')
             + '<div style="font-size:11px;color:' + (overdue ? 'var(--amber)' : 'var(--ink3)') + ';margin-top:3px">Last contact: ' + daysStr + (overdue ? ' !' : '') + '</div>'
             + '</div></div>';
         });
@@ -1303,6 +1372,10 @@ async function saveParcel() {
   const address = document.getElementById('new-address').value.trim();
   if (!address) { showToast('Please enter an address'); return; }
   const btn = document.getElementById('add-save-btn');
+  const role = document.getElementById('new-entity-role').value;
+  const price = document.getElementById('new-price').value;
+  if (!role) { showToast('Please select Buying or Selling'); return; }
+  if (!price) { showToast('Please enter a price'); return; }
   btn.disabled = true; btn.textContent = 'Saving...';
   const { error } = await supabaseClient.from('parcels').insert({
     broker_id: currentUser.id,
@@ -1315,12 +1388,13 @@ async function saveParcel() {
     lng: parseFloat(document.getElementById('new-lng').value.trim()) || null,
     entity: document.getElementById('new-entity').value.trim() || null,
     entity_role: document.getElementById('new-entity-role').value.trim() || null,
+    price: parseFloat(document.getElementById('new-price').value) || null,
     status: 'contacted'
   });
   btn.disabled = false; btn.textContent = 'Add Parcel';
   if (error) { showToast('Error saving parcel'); return; }
   closeModal('add-modal');
-  ['new-address','new-county','new-acres','new-owner','new-pid','new-coords','new-lat','new-lng','new-entity','new-entity-role'].forEach(id => document.getElementById(id).value = ''); document.getElementById('coords-preview').style.display='none';
+  ['new-address','new-county','new-acres','new-owner','new-pid','new-coords','new-lat','new-lng','new-entity','new-entity-role','new-price'].forEach(id => document.getElementById(id).value = ''); document.getElementById('coords-preview').style.display='none'; document.getElementById('price-field').style.display='none';
   showToast('Parcel added successfully');
   loadBrokerParcels();
 }
@@ -1354,6 +1428,20 @@ async function loadFirmDashboard() {
   if (!parcels) return;
   // Init map with slight delay so DOM is ready
   setTimeout(function() { initParcelMap(parcels); }, 100);
+
+  // Price KPIs
+  const buyParcels = parcels.filter(function(p) { return p.entity_role === 'buying' && p.price && !['closed','dead'].includes(p.status); });
+  const sellParcels = parcels.filter(function(p) { return p.entity_role === 'selling' && p.price && !['closed','dead'].includes(p.status); });
+  const buyTotal = buyParcels.reduce(function(a,p) { return a + (p.price||0); }, 0);
+  const sellTotal = sellParcels.reduce(function(a,p) { return a + (p.price||0); }, 0);
+  const bv = document.getElementById('f-buying-val');
+  const bs = document.getElementById('f-buying-sub');
+  const sv = document.getElementById('f-selling-val');
+  const ss = document.getElementById('f-selling-sub');
+  if (bv) bv.textContent = formatPrice(buyTotal) || '$0';
+  if (bs) bs.textContent = buyParcels.length + ' active parcel' + (buyParcels.length !== 1 ? 's' : '');
+  if (sv) sv.textContent = formatPrice(sellTotal) || '$0';
+  if (ss) ss.textContent = sellParcels.length + ' active parcel' + (sellParcels.length !== 1 ? 's' : '');
   // KPIs
   const active = parcels.filter(p => !['closed','dead'].includes(p.status)).length;
   const interested = parcels.filter(p => p.status === 'interested').length;
