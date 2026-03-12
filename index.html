@@ -528,6 +528,38 @@ async function firmNav(page) {
   const mc = document.querySelector('.main-content');
 
   if (page === 'dashboard') {
+    // Restore original dashboard HTML then load data
+    document.querySelector('.main-content').innerHTML = `
+      <div class="main-header">
+        <div>
+          <div class="main-title" id="firm-greeting">Good morning</div>
+          <div class="main-subtitle" id="firm-date"></div>
+        </div>
+        <button class="main-btn" onclick="showToast('Invite broker coming soon')">+ Add Broker</button>
+      </div>
+      <div class="kpi-row">
+        <div class="kpi-card"><div class="kpi-label">Active Parcels</div><div class="kpi-val" id="f-parcels">0</div><div class="kpi-sub">across all brokers</div></div>
+        <div class="kpi-card"><div class="kpi-label">Active Brokers</div><div class="kpi-val" id="f-brokers">0</div><div class="kpi-sub" id="f-brokers-sub"></div></div>
+        <div class="kpi-card"><div class="kpi-label">Follow-ups Due</div><div class="kpi-val amber" id="f-followups">0</div><div class="kpi-sub"><span class="kpi-warn">Overdue 30+ days</span></div></div>
+        <div class="kpi-card"><div class="kpi-label">Interested Owners</div><div class="kpi-val green" id="f-interested">0</div><div class="kpi-sub"><span class="kpi-up">pipeline active</span></div></div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header"><div class="card-title">All Parcels</div><div class="card-action" onclick="firmNav('parcels')">View all →</div></div>
+          <table>
+            <thead><tr><th>Address</th><th>Broker</th><th>Status</th><th>Last Contact</th></tr></thead>
+            <tbody id="firm-parcels-table"><tr><td colspan="4" style="text-align:center;color:var(--ink3);padding:20px">Loading...</td></tr></tbody>
+          </table>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Pipeline</div></div>
+          <div class="pipeline-list" id="firm-pipeline"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">Recent Activity</div></div>
+        <div class="activity-list" id="firm-activity"></div>
+      `;
     await loadFirmDashboard();
     return;
   }
