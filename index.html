@@ -370,10 +370,10 @@ tr:hover td { background: #FAFAF8; }
       <div class="sb-nav">
         <div class="sb-nav-label">Overview</div>
         <div class="sb-nav-item active">Dashboard</div>
-        <div class="sb-nav-item" onclick="navToAllParcels()">All Parcels</div>
+        <div class="sb-nav-item" onclick="firmNav('parcels')">All Parcels</div>
         <div class="sb-nav-item" onclick="showToast('Pipeline coming soon')">Pipeline</div>
         <div class="sb-nav-label" style="margin-top:12px">Team</div>
-        <div class="sb-nav-item" onclick="showToast('Broker management coming soon')">Brokers <span class="sb-badge" id="broker-count-badge">0</span></div>
+        <div class="sb-nav-item" onclick="showToast('Brokers coming soon')">Brokers <span class="sb-badge" id="broker-count-badge">0</span></div>
         <div class="sb-nav-label" style="margin-top:12px">Firm</div>
         <div class="sb-nav-item" onclick="showToast('Reports coming soon')">Reports</div>
         <div class="sb-nav-item" onclick="showToast('Settings coming soon')">Settings</div>
@@ -402,7 +402,7 @@ tr:hover td { background: #FAFAF8; }
       </div>
       <div class="two-col">
         <div class="card">
-          <div class="card-header"><div class="card-title">All Parcels</div><div class="card-action" onclick="navToAllParcels()">View all</div></div>
+          <div class="card-header"><div class="card-title">All Parcels</div><div class="card-action" onclick="firmNav('parcels')">View all →</div></div>
           <table>
             <thead><tr><th>Address</th><th>Broker</th><th>Status</th><th>Last Contact</th></tr></thead>
             <tbody id="firm-parcels-table"><tr><td colspan="4" style="text-align:center;color:var(--ink3);padding:20px">Loading...</td></tr></tbody>
@@ -413,7 +413,7 @@ tr:hover td { background: #FAFAF8; }
           <div class="pipeline-list" id="firm-pipeline"></div>
         </div>
       </div>
-      <div class="card" id="activity-card">
+      <div class="card">
         <div class="card-header"><div class="card-title">Recent Activity</div></div>
         <div class="activity-list" id="firm-activity"></div>
       </div>
@@ -511,118 +511,103 @@ async function loadProfile() {
 }
 
 
-// ── ALL PARCELS MODE ──
-let allParcelsData = [];
-let isAllParcelsMode = false;
+// ── FIRM NAVIGATION ──
+let firmAllParcels = [];
+let firmCurrentPage = 'dashboard';
 
-function navToAllParcels() {
-  isAllParcelsMode = true;
-  // Update sidebar active
-  document.querySelectorAll('.sb-nav-item').forEach(i => i.classList.remove('active'));
-  document.querySelectorAll('.sb-nav-item').forEach(i => { if(i.textContent.trim().startsWith('All Parcels')) i.classList.add('active'); });
-  // Update header
-  document.getElementById('firm-greeting').textContent = 'All Parcels';
-  document.getElementById('firm-date').textContent = 'Every parcel across all brokers';
-  // Hide KPI row and two-col and activity
-  document.querySelector('.kpi-row').style.display = 'none';
-  document.querySelector('.two-col').style.display = 'none';
-  document.getElementById('activity-card').style.display = 'none';
-  // Show search bar
-  let searchBar = document.getElementById('ap-searchbar');
-  if (!searchBar) {
-    searchBar = document.createElement('div');
-    searchBar.id = 'ap-searchbar';
-    searchBar.style.cssText = 'display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;';
-    searchBar.innerHTML = `
-      <input type="text" id="ap-search" placeholder="Search address, owner, county..." oninput="filterAllParcels()"
-        style="flex:1;min-width:200px;border:1.5px solid var(--border);border-radius:9px;padding:9px 13px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--ink);outline:none;background:var(--surface);">
-      <select id="ap-status-filter" onchange="filterAllParcels()"
-        style="border:1.5px solid var(--border);border-radius:9px;padding:9px 13px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--ink);outline:none;background:var(--surface);cursor:pointer;">
-        <option value="">All Statuses</option>
-        <option value="contacted">Contacted</option>
-        <option value="responded">Responded</option>
-        <option value="interested">Interested</option>
-        <option value="negotiating">Negotiating</option>
-        <option value="closed">Closed</option>
-        <option value="dead">Dead</option>
-      </select>
-      <button onclick="navToDashboard()" style="background:var(--surface2);color:var(--ink2);border:none;border-radius:9px;padding:9px 15px;font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;">← Dashboard</button>
-    `;
-    document.querySelector('.main-content').insertBefore(searchBar, document.querySelector('.kpi-row'));
-  } else {
-    searchBar.style.display = 'flex';
-  }
-  // Make two-col single column by hiding pipeline card
-  document.querySelector('.two-col').style.gridTemplateColumns = '1fr';
-  document.querySelectorAll('.two-col > .card').forEach((c,i) => { if(i>0) c.style.display='none'; });
-  // Expand the parcels card to full width
-  document.getElementById('parcels-card').style.width = '100%';
-  document.getElementById('parcels-card-title').textContent = 'All Parcels';
-  // Update table headers
-  document.getElementById('ap-h1').textContent = 'Address';
-  document.getElementById('ap-h2').textContent = 'County / Owner';
-  document.getElementById('ap-h3').textContent = 'Broker';
-  document.getElementById('ap-h4').textContent = 'Status';
-  // Make the two-col just show the card full width
-  loadAllParcelsTable();
-}
-
-async function loadAllParcelsTable() {
-  const tbody = document.getElementById('firm-parcels-table');
-  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--ink3);padding:24px">Loading...</td></tr>';
-  const { data: parcels } = await supabaseClient
-    .from('parcels')
-    .select('*, profiles(full_name), contact_logs(*)')
-    .order('created_at', { ascending: false });
-  allParcelsData = parcels || [];
-  document.getElementById('firm-date').textContent = allParcelsData.length + ' total parcels';
-  renderAllParcels(allParcelsData);
-}
-
-function filterAllParcels() {
-  const search = (document.getElementById('ap-search')?.value || '').toLowerCase();
-  const status = document.getElementById('ap-status-filter')?.value || '';
-  const filtered = allParcelsData.filter(p => {
-    const ms = !search || (p.address||'').toLowerCase().includes(search) || (p.owner_name||'').toLowerCase().includes(search) || (p.county||'').toLowerCase().includes(search);
-    const mst = !status || p.status === status;
-    return ms && mst;
+async function firmNav(page) {
+  firmCurrentPage = page;
+  // Update sidebar
+  document.querySelectorAll('.sb-nav-item').forEach(el => {
+    el.classList.remove('active');
+    const txt = el.textContent.trim();
+    if (page === 'dashboard' && txt === 'Dashboard') el.classList.add('active');
+    if (page === 'parcels' && txt.startsWith('All Parcels')) el.classList.add('active');
   });
-  document.getElementById('firm-date').textContent = filtered.length + ' of ' + allParcelsData.length + ' parcels';
-  renderAllParcels(filtered);
+
+  const mc = document.querySelector('.main-content');
+
+  if (page === 'dashboard') {
+    await loadFirmDashboard();
+    return;
+  }
+
+  if (page === 'parcels') {
+    // Load all parcels into main-content
+    mc.innerHTML = `
+      <div class="main-header">
+        <div>
+          <div class="main-title">All Parcels</div>
+          <div class="main-subtitle" id="ap-count">Loading...</div>
+        </div>
+        <button class="main-btn" onclick="firmNav('dashboard')">← Dashboard</button>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+        <input type="text" id="ap-search" placeholder="Search address, owner, county..." oninput="apFilter()"
+          style="flex:1;min-width:200px;border:1.5px solid var(--border);border-radius:9px;padding:9px 13px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--ink);outline:none;background:var(--surface);">
+        <select id="ap-status" onchange="apFilter()"
+          style="border:1.5px solid var(--border);border-radius:9px;padding:9px 13px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--ink);outline:none;background:var(--surface);cursor:pointer;">
+          <option value="">All Statuses</option>
+          <option value="contacted">Contacted</option>
+          <option value="responded">Responded</option>
+          <option value="interested">Interested</option>
+          <option value="negotiating">Negotiating</option>
+          <option value="closed">Closed</option>
+          <option value="dead">Dead</option>
+        </select>
+      </div>
+      <div class="card">
+        <table>
+          <thead><tr><th>Address</th><th>County / Owner</th><th>Acreage</th><th>Broker</th><th>Status</th><th>Last Contact</th><th>Logs</th></tr></thead>
+          <tbody id="ap-tbody"><tr><td colspan="7" style="text-align:center;color:var(--ink3);padding:24px">Loading...</td></tr></tbody>
+        </table>
+      </div>`;
+
+    const { data } = await supabaseClient
+      .from('parcels')
+      .select('*, profiles(full_name), contact_logs(*)')
+      .order('created_at', { ascending: false });
+
+    firmAllParcels = data || [];
+    document.getElementById('ap-count').textContent = firmAllParcels.length + ' total parcels';
+    apRender(firmAllParcels);
+  }
 }
 
-function renderAllParcels(parcels) {
-  const tbody = document.getElementById('firm-parcels-table');
+function apFilter() {
+  const s = (document.getElementById('ap-search')?.value || '').toLowerCase();
+  const st = document.getElementById('ap-status')?.value || '';
+  const filtered = firmAllParcels.filter(p =>
+    (!s || (p.address||'').toLowerCase().includes(s) || (p.owner_name||'').toLowerCase().includes(s) || (p.county||'').toLowerCase().includes(s)) &&
+    (!st || p.status === st)
+  );
+  document.getElementById('ap-count').textContent = filtered.length + ' of ' + firmAllParcels.length + ' parcels';
+  apRender(filtered);
+}
+
+function apRender(parcels) {
+  const tbody = document.getElementById('ap-tbody');
+  if (!tbody) return;
   const now = new Date();
   if (!parcels.length) {
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--ink3);padding:24px">No parcels found</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--ink3);padding:24px">No parcels found</td></tr>';
     return;
   }
   tbody.innerHTML = parcels.map(p => {
-    const logs = (p.contact_logs||[]).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
-    const days = Math.floor((now - new Date(logs[0]?.created_at || p.created_at))/86400000);
+    const logs = (p.contact_logs||[]).sort((a,b) => new Date(b.created_at)-new Date(a.created_at));
+    const days = Math.floor((now - new Date(logs[0]?.created_at || p.created_at)) / 86400000);
     const lastStr = days===0?'Today':days===1?'Yesterday':days+'d ago';
     const overdue = days>=30 && !['closed','dead'].includes(p.status);
     return `<tr>
       <td><div style="font-weight:600;font-size:12px">${p.address}</div><div style="font-size:10px;color:var(--ink3)">${p.parcel_id||''}</div></td>
       <td><div style="font-size:12px">${p.county||'—'}</div><div style="font-size:10px;color:var(--ink3)">${p.owner_name||''}</div></td>
+      <td style="font-size:12px;font-family:'DM Mono',monospace">${p.acreage||'—'}</td>
       <td style="font-size:12px">${p.profiles?.full_name||'Unknown'}</td>
-      <td><span class="pill pill-${p.status}">${capitalize(p.status)}</span><div style="font-size:10px;color:${overdue?'var(--amber)':'var(--ink3)'};margin-top:3px">${lastStr}${overdue?' ⚠':''}</div></td>
+      <td><span class="pill pill-${p.status}">${capitalize(p.status)}</span></td>
+      <td style="font-size:11px;color:${overdue?'var(--amber)':'var(--ink2)'}">${lastStr}${overdue?' ⚠':''}</td>
+      <td style="font-size:12px;font-family:'DM Mono',monospace;text-align:center">${logs.length}</td>
     </tr>`;
   }).join('');
-}
-
-function navToDashboard() {
-  isAllParcelsMode = false;
-  document.querySelectorAll('.sb-nav-item').forEach((i,idx) => { i.classList.remove('active'); if(idx===0) i.classList.add('active'); });
-  document.querySelector('.kpi-row').style.display = 'grid';
-  document.querySelector('.two-col').style.display = 'grid';
-  document.querySelector('.two-col').style.gridTemplateColumns = '1fr 300px';
-  document.querySelectorAll('.two-col > .card').forEach(c => c.style.display='block');
-  document.getElementById('activity-card').style.display = 'block';
-  const sb = document.getElementById('ap-searchbar');
-  if (sb) sb.style.display = 'none';
-  loadFirmDashboard();
 }
 
 // ── AUTH ──
