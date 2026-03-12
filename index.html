@@ -473,6 +473,17 @@ tr:hover td { background: #FAFAF8; }
     <div class="form-field"><label>Acreage</label><input type="text" id="new-acres" placeholder="e.g. 8.5"></div>
     <div class="form-field"><label>Owner Name</label><input type="text" id="new-owner" placeholder="e.g. J. Smith"></div>
     <div class="form-field"><label>Parcel ID (optional)</label><input type="text" id="new-pid" placeholder="e.g. VL-1234"></div>
+    <div class="form-field">
+      <label style="display:flex;justify-content:space-between;align-items:center">
+        <span>Coordinates (optional)</span>
+        <a href="https://maps.google.com" target="_blank" style="font-size:10px;color:var(--accent);text-decoration:none;font-weight:500">📍 Open Google Maps →</a>
+      </label>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="new-lat" placeholder="Latitude e.g. 29.0212" style="flex:1">
+        <input type="text" id="new-lng" placeholder="Longitude e.g. -81.0712" style="flex:1">
+      </div>
+      <div style="font-size:10px;color:var(--ink3);margin-top:4px">In Google Maps: long-press the parcel location → copy the coordinates shown</div>
+    </div>
     <div class="modal-btns" style="margin-top:8px">
       <button class="modal-cancel" onclick="closeModal('add-modal')">Cancel</button>
       <button class="modal-save" id="add-save-btn" onclick="saveParcel()">Add Parcel</button>
@@ -1075,12 +1086,14 @@ async function saveParcel() {
     acreage: document.getElementById('new-acres').value.trim(),
     owner_name: document.getElementById('new-owner').value.trim(),
     parcel_id: document.getElementById('new-pid').value.trim(),
+    lat: parseFloat(document.getElementById('new-lat').value.trim()) || null,
+    lng: parseFloat(document.getElementById('new-lng').value.trim()) || null,
     status: 'contacted'
   });
   btn.disabled = false; btn.textContent = 'Add Parcel';
   if (error) { showToast('Error saving parcel'); return; }
   closeModal('add-modal');
-  ['new-address','new-county','new-acres','new-owner','new-pid'].forEach(id => document.getElementById(id).value = '');
+  ['new-address','new-county','new-acres','new-owner','new-pid','new-lat','new-lng'].forEach(id => document.getElementById(id).value = '');
   showToast('Parcel added successfully');
   loadBrokerParcels();
 }
