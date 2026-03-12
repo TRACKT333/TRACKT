@@ -46,7 +46,7 @@ body { font-family: 'DM Sans', sans-serif; background: #CCC8C2; min-height: 100v
 .login-btn { width: 100%; background: var(--accent); color: white; border: none; border-radius: 10px; padding: 13px; font-size: 14px; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; margin-top: 6px; transition: background 0.15s; }
 .login-btn:hover { background: #245030; }
 .login-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-.login-error { background: var(--red-light); border: 1px solid #F5C6C2; border-radius: 8px; padding: 10px 13px; font-size: 13px; color: var(--red); margin-bottom: 14px; display: none; }
+.login-error { background: var(--accent-light); border: 1px solid #C3D9C9; border-radius: 8px; padding: 10px 13px; font-size: 13px; color: var(--accent); margin-bottom: 14px; display: none; }
 .login-switch { text-align: center; font-size: 12px; color: var(--ink3); margin-top: 18px; }
 .login-switch a { color: var(--accent); font-weight: 500; cursor: pointer; text-decoration: none; }
 
@@ -534,26 +534,29 @@ async function handleAuth() {
   try {
     if (isSignUp) {
       const name = document.getElementById('auth-name').value.trim();
+      showAuthError('Connecting to database...');
       const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: name } } });
       btn.disabled = false;
       btn.textContent = 'Create Account';
-      if (error) { showAuthError(error.message); return; }
-      if (!data.user) { showAuthError('Check your email to confirm your account'); return; }
+      if (error) { showAuthError('Signup error: ' + error.message); return; }
+      if (!data.user) { showAuthError('Check your email to confirm your account, then sign in'); return; }
       currentUser = data.user;
+      showAuthError('Account created! Loading...');
       await supabase.from('profiles').insert({ id: currentUser.id, full_name: name || email.split('@')[0], role: 'broker', firm: 'JAG Acquisitions' });
       await loadProfile();
     } else {
+      showAuthError('Signing in...');
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       btn.disabled = false;
       btn.textContent = 'Sign In';
-      if (error) { showAuthError('Invalid email or password'); return; }
+      if (error) { showAuthError('Login error: ' + error.message); return; }
       currentUser = data.user;
       await loadProfile();
     }
   } catch(e) {
     btn.disabled = false;
     btn.textContent = isSignUp ? 'Create Account' : 'Sign In';
-    showAuthError('Connection error. Please try again.');
+    showAuthError('Error: ' + e.message);
   }
 }
 
