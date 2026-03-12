@@ -395,7 +395,7 @@ tr:hover td { background: #FAFAF8; }
         <div class="sb-nav-item" onclick="firmNav('brokers')">Brokers <span class="sb-badge" id="broker-count-badge">0</span></div>
         <div class="sb-nav-label" style="margin-top:12px">Firm</div>
         <div class="sb-nav-item" onclick="showToast('Reports coming soon')">Reports</div>
-        <div class="sb-nav-item" onclick="showToast('Settings coming soon')">Settings</div>
+        <div class="sb-nav-item" onclick="firmNav('settings')">Settings</div>
       </div>
       <div class="sb-footer">
         <div class="sb-user">
@@ -476,6 +476,23 @@ tr:hover td { background: #FAFAF8; }
     <div class="form-field"><label>Acreage</label><input type="text" id="new-acres" placeholder="e.g. 8.5"></div>
     <div class="form-field"><label>Owner Name</label><input type="text" id="new-owner" placeholder="e.g. J. Smith"></div>
     <div class="form-field"><label>Parcel ID (optional)</label><input type="text" id="new-pid" placeholder="e.g. VL-1234"></div>
+    <div class="form-field">
+      <label>Transaction Type</label>
+      <select id="new-entity-role" style="width:100%;border:1.5px solid var(--border);border-radius:9px;padding:9px 13px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--ink);outline:none;background:var(--surface)">
+        <option value="">Select buying or selling...</option>
+        <option value="buying">Buying</option>
+        <option value="selling">Selling</option>
+      </select>
+    </div>
+    <div class="form-field">
+      <label style="display:flex;justify-content:space-between;align-items:center">
+        <span>Entity</span>
+        <span id="entity-manage-link" style="font-size:10px;color:var(--accent);cursor:pointer;font-weight:500" onclick="closeModal('add-modal');firmNav('settings')">Manage entities →</span>
+      </label>
+      <select id="new-entity" style="width:100%;border:1.5px solid var(--border);border-radius:9px;padding:9px 13px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--ink);outline:none;background:var(--surface)">
+        <option value="">Select entity...</option>
+      </select>
+    </div>
     <div class="form-field">
       <label style="display:flex;justify-content:space-between;align-items:center">
         <span>Coordinates (optional)</span>
@@ -635,6 +652,23 @@ let firmCurrentPage = 'dashboard';
 
 
 
+
+async function loadEntities() {
+  const { data } = await supabaseClient.from('entities').select('*').eq('active', true).order('name');
+  const sel = document.getElementById('new-entity');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Select entity...</option>';
+  (data || []).forEach(function(e) {
+    const opt = document.createElement('option');
+    opt.value = e.name;
+    opt.textContent = e.name;
+    sel.appendChild(opt);
+  });
+  if (!data || data.length === 0) {
+    sel.innerHTML = '<option value="">No entities yet — add via Settings</option>';
+  }
+}
+
 function parseCoords(val) {
   const preview = document.getElementById('coords-preview');
   const parts = val.split(',');
@@ -670,6 +704,7 @@ function parseCoords(val) {
 
 function openAdminAddParcel() {
   document.getElementById('add-modal').classList.add('open');
+  loadEntities();
 }
 
 function toggleSidebar() {
@@ -786,6 +821,14 @@ async function firmNav(page, parcelId) {
 
     // Store current parcel id for status updates
     window._adminParcelId = parcelId;
+    return;
+  }
+
+
+  if (page === 'settings') {
+    const mc = document.querySelector('.main-content');
+    mc.innerHTML = '<div class="main-header"><div><div class="main-title">Settings</div><div class="main-subtitle">Manage your firm configuration</div></div><button class="main-btn" onclick="firmNav(\'dashboard\')">&#8592; Dashboard</button></div><div class="card" style="max-width:560px"><div class="card-header"><div class="card-title">LLC Entities</div><div style="font-size:11px;color:var(--ink3)">Entities brokers can select when adding parcels</div></div><div style="padding:14px"><div style="display:flex;gap:8px;margin-bottom:16px"><input type="text" id="new-entity-input" placeholder="e.g. JAG Land Holdings LLC" style="flex:1;border:1.5px solid var(--border);border-radius:9px;padding:9px 13px;font-size:13px;font-family:DM Sans,sans-serif;color:var(--ink);outline:none;background:var(--surface)"><button class="main-btn" onclick="addEntity()">+ Add</button></div><div id="entity-list"><div style="text-align:center;color:var(--ink3);padding:20px;font-size:13px">Loading...</div></div></div></div>';
+    loadEntityList();
     return;
   }
 
@@ -923,6 +966,47 @@ function apRender(parcels) {
 }
 
 
+
+
+async function loadEntityList() {
+  const { data } = await supabaseClient.from('entities').select('*').order('name');
+  const list = document.getElementById('entity-list');
+  if (!list) return;
+  if (!data || data.length === 0) {
+    list.innerHTML = '<div style="font-size:13px;color:var(--ink3);text-align:center;padding:16px">No entities added yet</div>';
+    return;
+  }
+  list.innerHTML = data.map(function(e) {
+    const activeBg = e.active ? 'var(--accent-light)' : '#F3F4F6';
+    const activeColor = e.active ? 'var(--accent)' : 'var(--ink3)';
+    const activeLabel = e.active ? 'Active' : 'Inactive';
+    const toggleLabel = e.active ? 'Deactivate' : 'Activate';
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)"><div style="font-size:13px;font-weight:500">' + e.name + '</div><div style="display:flex;align-items:center;gap:8px"><span style="font-size:10px;padding:2px 8px;border-radius:10px;background:' + activeBg + ';color:' + activeColor + '">' + activeLabel + '</span><button onclick="toggleEntity('' + e.id + '', ' + e.active + ')" style="font-size:11px;border:1px solid var(--border);border-radius:6px;padding:3px 8px;background:var(--surface);cursor:pointer;font-family:DM Sans,sans-serif">' + toggleLabel + '</button><button onclick="deleteEntity('' + e.id + '')" style="font-size:11px;border:1px solid #FECACA;border-radius:6px;padding:3px 8px;background:#FEF2F2;color:#DC2626;cursor:pointer;font-family:DM Sans,sans-serif">Delete</button></div></div>';
+  }).join('');
+}
+
+async function addEntity() {
+  const input = document.getElementById('new-entity-input');
+  const name = (input.value || '').trim();
+  if (!name) return;
+  const { error } = await supabaseClient.from('entities').insert({ name: name });
+  if (error) { showToast('Error adding entity'); return; }
+  input.value = '';
+  showToast(name + ' added');
+  loadEntityList();
+}
+
+async function toggleEntity(id, current) {
+  await supabaseClient.from('entities').update({ active: !current }).eq('id', id);
+  loadEntityList();
+}
+
+async function deleteEntity(id) {
+  if (!confirm('Delete this entity? This will not affect existing parcels.')) return;
+  await supabaseClient.from('entities').delete().eq('id', id);
+  showToast('Entity deleted');
+  loadEntityList();
+}
 
 async function deleteParcel(parcelId) {
   if (!confirm('Delete this parcel and all its contact logs? This cannot be undone.')) return;
@@ -1130,7 +1214,7 @@ async function updateStatus(parcelId, status, el) {
 }
 
 // ── MODALS ──
-function openAddModal() { document.getElementById('add-modal').classList.add('open'); }
+function openAddModal() { document.getElementById('add-modal').classList.add('open'); loadEntities(); }
 function openLogModal() { document.getElementById('log-modal').classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 function selectType(el) { document.querySelectorAll('.modal-type').forEach(t => t.classList.remove('selected')); el.classList.add('selected'); }
@@ -1149,12 +1233,14 @@ async function saveParcel() {
     parcel_id: document.getElementById('new-pid').value.trim(),
     lat: parseFloat(document.getElementById('new-lat').value.trim()) || null,
     lng: parseFloat(document.getElementById('new-lng').value.trim()) || null,
+    entity: document.getElementById('new-entity').value.trim() || null,
+    entity_role: document.getElementById('new-entity-role').value.trim() || null,
     status: 'contacted'
   });
   btn.disabled = false; btn.textContent = 'Add Parcel';
   if (error) { showToast('Error saving parcel'); return; }
   closeModal('add-modal');
-  ['new-address','new-county','new-acres','new-owner','new-pid','new-coords','new-lat','new-lng'].forEach(id => document.getElementById(id).value = ''); document.getElementById('coords-preview').style.display='none';
+  ['new-address','new-county','new-acres','new-owner','new-pid','new-coords','new-lat','new-lng','new-entity','new-entity-role'].forEach(id => document.getElementById(id).value = ''); document.getElementById('coords-preview').style.display='none';
   showToast('Parcel added successfully');
   loadBrokerParcels();
 }
