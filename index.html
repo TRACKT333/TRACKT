@@ -1315,7 +1315,7 @@ function loadBrokerView() {
   const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2);
   document.getElementById('b-name').textContent = name.split(' ')[0];
   document.getElementById('b-avatar').textContent = initials;
-  document.getElementById('b-user-initial').textContent = initials;
+  const bui = document.getElementById('b-user-initial'); if(bui) bui.textContent = initials;
   showScreen('broker');
   loadBrokerParcels();
 }
