@@ -413,7 +413,7 @@ tr:hover td { background: #FAFAF8; }
           <div class="pipeline-list" id="firm-pipeline"></div>
         </div>
       </div>
-      <div class="card">
+      <div class="card" id="activity-card">
         <div class="card-header"><div class="card-title">Recent Activity</div></div>
         <div class="activity-list" id="firm-activity"></div>
       </div>
@@ -526,7 +526,7 @@ function navToAllParcels() {
   // Hide KPI row and two-col and activity
   document.querySelector('.kpi-row').style.display = 'none';
   document.querySelector('.two-col').style.display = 'none';
-  document.querySelector('.card:last-child').style.display = 'none';
+  document.getElementById('activity-card').style.display = 'none';
   // Show search bar
   let searchBar = document.getElementById('ap-searchbar');
   if (!searchBar) {
@@ -619,7 +619,7 @@ function navToDashboard() {
   document.querySelector('.two-col').style.display = 'grid';
   document.querySelector('.two-col').style.gridTemplateColumns = '1fr 300px';
   document.querySelectorAll('.two-col > .card').forEach(c => c.style.display='block');
-  document.querySelector('.card:last-child').style.display = 'block';
+  document.getElementById('activity-card').style.display = 'block';
   const sb = document.getElementById('ap-searchbar');
   if (sb) sb.style.display = 'none';
   loadFirmDashboard();
