@@ -6,6 +6,8 @@
 <title>Trackt – Land Pipeline</title>
 <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -18,6 +20,8 @@
   --border: #E2DED8; --sidebar: #1A1814;
 }
 body { font-family: 'DM Sans', sans-serif; background: #CCC8C2; min-height: 100vh; position: relative; }
+#parcel-map { height: 340px; width: 100%; border-radius: 0 0 12px 12px; z-index: 1; }
+.map-card { margin-bottom: 13px; }
 
 /* ── SCREENS ── */
 .screen { display: none; }
@@ -415,6 +419,10 @@ tr:hover td { background: #FAFAF8; }
         <div class="kpi-card"><div class="kpi-label">Follow-ups Due</div><div class="kpi-val amber" id="f-followups">0</div><div class="kpi-sub"><span class="kpi-warn">Overdue 30+ days</span></div></div>
         <div class="kpi-card"><div class="kpi-label">Interested Owners</div><div class="kpi-val green" id="f-interested">0</div><div class="kpi-sub"><span class="kpi-up">pipeline active</span></div></div>
       </div>
+      <div class="card map-card">
+        <div class="card-header"><div class="card-title">Parcel Map</div><div class="card-action" id="map-subtitle">Loading locations...</div></div>
+        <div id="parcel-map"></div>
+      </div>
       <div class="two-col">
         <div class="card">
           <div class="card-header"><div class="card-title">All Parcels</div><div class="card-action" onclick="firmNav('parcels')">View all →</div></div>
@@ -525,6 +533,86 @@ async function loadProfile() {
   }
 }
 
+
+
+// ── PARCEL MAP ──
+let leafletMap = null;
+let mapMarkers = [];
+
+async function initParcelMap(parcels) {
+  if (!document.getElementById('parcel-map')) return;
+
+  // Init map centered on Volusia County, FL
+  if (!leafletMap) {
+    leafletMap = L.map('parcel-map', { zoomControl: true }).setView([29.02, -81.07], 10);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors',
+      maxZoom: 19
+    }).addTo(leafletMap);
+  } else {
+    // Clear existing markers
+    mapMarkers.forEach(function(m) { leafletMap.removeLayer(m); });
+    mapMarkers = [];
+  }
+
+  const activeParcels = (parcels || []).filter(function(p) { return !['dead'].includes(p.status); });
+  document.getElementById('map-subtitle').textContent = activeParcels.length + ' parcels';
+
+  let geocoded = 0;
+  for (let i = 0; i < activeParcels.length; i++) {
+    const p = activeParcels[i];
+    // Check if we already have coords stored
+    if (p.lat && p.lng) {
+      addMapPin(p, p.lat, p.lng);
+      geocoded++;
+    } else {
+      // Geocode the address
+      const coords = await geocodeAddress(p.address + ', ' + (p.county || 'Volusia County') + ', FL');
+      if (coords) {
+        addMapPin(p, coords.lat, coords.lng);
+        // Save coords back to DB so we don't geocode again
+        supabaseClient.from('parcels').update({ lat: coords.lat, lng: coords.lng }).eq('id', p.id);
+        geocoded++;
+      }
+      // Small delay to respect geocoding rate limit
+      await new Promise(function(r) { setTimeout(r, 300); });
+    }
+  }
+  document.getElementById('map-subtitle').textContent = geocoded + ' of ' + activeParcels.length + ' mapped';
+  // Fit map to markers
+  if (mapMarkers.length > 0) {
+    const group = L.featureGroup(mapMarkers);
+    leafletMap.fitBounds(group.getBounds().pad(0.2));
+  }
+}
+
+function addMapPin(p, lat, lng) {
+  const statusColors = {
+    contacted: '#2563EB', responded: '#16A34A', interested: '#2D5F3F',
+    negotiating: '#C8832A', closed: '#15803D', dead: '#C0392B'
+  };
+  const color = statusColors[p.status] || '#6B6760';
+  const icon = L.divIcon({
+    className: '',
+    html: '<div style="width:12px;height:12px;border-radius:50%;background:' + color + ';border:2px solid white;box-shadow:0 2px 4px rgba(0,0,0,0.3)"></div>',
+    iconSize: [12, 12],
+    iconAnchor: [6, 6]
+  });
+  const marker = L.marker([lat, lng], { icon: icon })
+    .addTo(leafletMap)
+    .bindPopup('<div style="font-family:DM Sans,sans-serif;min-width:160px"><div style="font-weight:600;font-size:13px;margin-bottom:4px">' + p.address + '</div><div style="font-size:11px;color:#6B6760;margin-bottom:6px">' + (p.owner_name||'Unknown owner') + ' · ' + (p.acreage||'?') + ' ac</div><span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;background:' + color + '20;color:' + color + '">' + p.status.toUpperCase() + '</span></div>');
+  mapMarkers.push(marker);
+}
+
+async function geocodeAddress(address) {
+  try {
+    const encoded = encodeURIComponent(address);
+    const res = await fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encoded + '&limit=1&countrycodes=us');
+    const data = await res.json();
+    if (data && data[0]) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+  } catch(e) {}
+  return null;
+}
 
 // ── FIRM NAVIGATION ──
 let firmAllParcels = [];
@@ -1024,6 +1112,8 @@ async function loadFirmDashboard() {
   // Load all parcels
   const { data: parcels } = await supabaseClient.from('parcels').select('*, profiles(full_name), contact_logs(*)').order('created_at', { ascending: false });
   if (!parcels) return;
+  // Init map with slight delay so DOM is ready
+  setTimeout(function() { initParcelMap(parcels); }, 100);
   // KPIs
   const active = parcels.filter(p => !['closed','dead'].includes(p.status)).length;
   const interested = parcels.filter(p => p.status === 'interested').length;
