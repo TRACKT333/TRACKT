@@ -419,7 +419,7 @@ tr:hover td { background: #FAFAF8; }
       <div class="kpi-row">
         <div class="kpi-card"><div class="kpi-label">Active Parcels</div><div class="kpi-val" id="f-parcels">0</div><div class="kpi-sub">across all brokers</div></div>
         <div class="kpi-card"><div class="kpi-label">Active Brokers</div><div class="kpi-val" id="f-brokers">0</div><div class="kpi-sub" id="f-brokers-sub"></div></div>
-        <div class="kpi-card"><div class="kpi-label">Follow-ups Due</div><div class="kpi-val amber" id="f-followups">0</div><div class="kpi-sub"><span class="kpi-warn">Overdue 30+ days</span></div></div>
+        <div class="kpi-card" style="cursor:pointer" onclick="firmNav('followups')"><div class="kpi-label">Follow-ups Due</div><div class="kpi-val amber" id="f-followups">0</div><div class="kpi-sub"><span class="kpi-warn">Click to review</span></div></div>
         <div class="kpi-card"><div class="kpi-label">Interested Owners</div><div class="kpi-val green" id="f-interested">0</div><div class="kpi-sub"><span class="kpi-up">pipeline active</span></div></div>
       </div>
       <div class="kpi-row" id="price-kpi-row" style="margin-top:-4px">
@@ -800,7 +800,7 @@ async function firmNav(page, parcelId) {
       <div class="kpi-row">
         <div class="kpi-card"><div class="kpi-label">Active Parcels</div><div class="kpi-val" id="f-parcels">0</div><div class="kpi-sub">across all brokers</div></div>
         <div class="kpi-card"><div class="kpi-label">Active Brokers</div><div class="kpi-val" id="f-brokers">0</div><div class="kpi-sub" id="f-brokers-sub"></div></div>
-        <div class="kpi-card"><div class="kpi-label">Follow-ups Due</div><div class="kpi-val amber" id="f-followups">0</div><div class="kpi-sub"><span class="kpi-warn">Overdue 30+ days</span></div></div>
+        <div class="kpi-card" style="cursor:pointer" onclick="firmNav('followups')"><div class="kpi-label">Follow-ups Due</div><div class="kpi-val amber" id="f-followups">0</div><div class="kpi-sub"><span class="kpi-warn">Click to review</span></div></div>
         <div class="kpi-card"><div class="kpi-label">Interested Owners</div><div class="kpi-val green" id="f-interested">0</div><div class="kpi-sub"><span class="kpi-up">pipeline active</span></div></div>
       </div>
       <div class="kpi-row" id="price-kpi-row" style="margin-top:-4px">
@@ -876,6 +876,12 @@ async function firmNav(page, parcelId) {
     + '<div>'
     + '<div class="card" style="margin-bottom:16px"><div class="card-header"><div class="card-title">Parcel Info</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div style="background:var(--surface);padding:14px"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.5px">Owner</div><div style="font-size:14px;font-weight:600;margin-top:3px">' + (p.owner_name||'—') + '</div></div><div style="background:var(--surface);padding:14px"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.5px">Acreage</div><div style="font-size:14px;font-weight:600;font-family:DM Mono,monospace;margin-top:3px">' + (p.acreage||'—') + '</div></div><div style="background:var(--surface);padding:14px"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.5px">Parcel ID</div><div style="font-size:14px;font-weight:600;font-family:DM Mono,monospace;margin-top:3px">' + (p.parcel_id||'—') + '</div></div><div style="background:var(--surface);padding:14px"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.5px">Broker</div><div style="font-size:14px;font-weight:600;margin-top:3px">' + brokerName + '</div></div><div style="background:var(--surface);padding:14px"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.5px">Last Contact</div><div style="font-size:14px;font-weight:600;margin-top:3px;color:' + (overdue?'var(--amber)':'var(--ink)') + '">' + lastStr + (overdue?' ⚠':'') + '</div></div><div style="background:var(--surface);padding:14px"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.5px">Added</div><div style="font-size:14px;font-weight:600;margin-top:3px">' + new Date(p.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) + '</div></div></div></div>'
     + '<div class="card"><div class="card-header"><div class="card-title">Update Status</div></div><div style="padding:14px;display:flex;flex-wrap:wrap;gap:7px" id="status-btns">' + statusBtns + '</div></div>'
+    + '<div class="card" style="margin-top:16px"><div class="card-header"><div class="card-title">Follow-up</div></div><div style="padding:14px">'
+    + '<label style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px">Next Follow-up Date</label>'
+    + '<div style="display:flex;gap:8px;align-items:center"><input type="date" id="detail-followup" value="' + (p.follow_up_date || '') + '" style="border:1.5px solid var(--border);border-radius:9px;padding:8px 12px;font-size:13px;font-family:DM Sans,sans-serif;color:var(--ink);outline:none;background:var(--surface)"><button onclick="saveFollowUp(\'' + parcelId + '\')" style="background:var(--accent);color:white;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;font-family:DM Sans,sans-serif;cursor:pointer">Save</button></div>'
+    + (p.follow_up_date ? '<div style="font-size:11px;margin-top:6px;color:' + (new Date(p.follow_up_date) < new Date() ? 'var(--amber)' : 'var(--accent)') + '">' + (new Date(p.follow_up_date) < new Date() ? '⚠ Overdue — was due ' : '✓ Scheduled for ') + new Date(p.follow_up_date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) + '</div>' : '')
+    + '</div></div>'
+    + '<div class="card" style="margin-top:16px"><div class="card-header"><div class="card-title">Parcel Notes</div><div style="font-size:10px;color:var(--ink3)">Visible to all team members</div></div><div style="padding:14px"><textarea id="detail-notes" rows="5" placeholder="Owner preferences, access notes, deal context..." style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:9px;padding:10px 12px;font-size:13px;font-family:DM Sans,sans-serif;color:var(--ink);outline:none;background:var(--surface);resize:vertical">' + (p.notes || '') + '</textarea><button onclick="saveNotes(\'' + parcelId + '\')" style="margin-top:8px;background:var(--accent);color:white;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:600;font-family:DM Sans,sans-serif;cursor:pointer">Save Notes</button></div></div>'
     + '<div class="card" style="margin-top:16px;border:1.5px solid #FEE2E2"><div style="padding:14px"><div style="font-size:12px;font-weight:600;color:#DC2626;margin-bottom:8px">Danger Zone</div><button onclick="deleteParcel(\'' + parcelId + '\')" style="background:#FEF2F2;color:#DC2626;border:1.5px solid #FECACA;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:600;font-family:DM Sans,sans-serif;cursor:pointer">🗑 Delete This Parcel</button><div style="font-size:10px;color:#9CA3AF;margin-top:6px">This cannot be undone. All contact logs will also be deleted.</div></div></div>'
     + '</div>'
     + '<div class="card"><div class="card-header"><div class="card-title">Contact History</div><div style="font-size:11px;color:var(--ink3)">' + logs.length + ' contacts</div></div><div style="padding:14px">' + timelineHtml + '<div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Added to Pipeline</div><div style="font-size:11px;color:var(--ink2)">' + new Date(p.created_at).toLocaleDateString('en-US',{month:'short',day:'2-digit',year:'numeric'}) + '</div></div></div></div>'
@@ -887,6 +893,63 @@ async function firmNav(page, parcelId) {
   }
 
 
+
+
+  if (page === 'followups') {
+    const mc = document.querySelector('.main-content');
+    mc.innerHTML = '<div class="main-header"><div><div class="main-title">Follow-ups Due</div><div class="main-subtitle" id="fu-subtitle">Loading...</div></div><button class="main-btn" onclick="firmNav(\'dashboard\')">&#8592; Dashboard</button></div><div id="fu-list"></div>';
+
+    const now = new Date();
+    const { data: parcels } = await supabaseClient
+      .from('parcels')
+      .select('*, profiles(full_name), contact_logs(*)')
+      .not('status', 'in', '("closed","dead")')
+      .order('follow_up_date', { ascending: true, nullsFirst: false });
+
+    if (!parcels) return;
+
+    // Flag overdue: has a past follow-up date OR 30+ days since last contact with no future follow-up
+    const overdue = parcels.filter(function(p) {
+      if (p.follow_up_date && new Date(p.follow_up_date) <= now) return true;
+      if (!p.follow_up_date) {
+        const logs = (p.contact_logs||[]).sort(function(a,b) { return new Date(b.created_at)-new Date(a.created_at); });
+        const days = Math.floor((now - new Date((logs[0] && logs[0].created_at)||p.created_at)) / 86400000);
+        return days >= 30;
+      }
+      return false;
+    });
+
+    const upcoming = parcels.filter(function(p) {
+      return p.follow_up_date && new Date(p.follow_up_date) > now;
+    });
+
+    document.getElementById('fu-subtitle').textContent = overdue.length + ' overdue · ' + upcoming.length + ' upcoming';
+
+
+
+
+    const fuList = document.getElementById('fu-list');
+    fuList.innerHTML = '';
+    if (overdue.length > 0) {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.style.marginBottom = '13px';
+      card.innerHTML = '<div class="card-header"><div class="card-title" style="color:var(--amber)">Overdue</div><div style="font-size:11px;color:var(--ink3)">' + overdue.length + ' parcel' + (overdue.length !== 1 ? 's' : '') + '</div></div>';
+      overdue.forEach(function(p) { card.appendChild(renderFuCard(p, true)); });
+      fuList.appendChild(card);
+    }
+    if (upcoming.length > 0) {
+      const card2 = document.createElement('div');
+      card2.className = 'card';
+      card2.innerHTML = '<div class="card-header"><div class="card-title" style="color:var(--accent)">Upcoming</div><div style="font-size:11px;color:var(--ink3)">' + upcoming.length + ' scheduled</div></div>';
+      upcoming.forEach(function(p) { card2.appendChild(renderFuCard(p, false)); });
+      fuList.appendChild(card2);
+    }
+    if (overdue.length === 0 && upcoming.length === 0) {
+      fuList.innerHTML = '<div class="card"><div style="padding:40px;text-align:center;color:var(--ink3);font-size:13px">All caught up — no follow-ups due</div></div>';
+    }
+    return;
+  }
 
   if (page === 'pipeline') {
     const mc = document.querySelector('.main-content');
@@ -1157,6 +1220,28 @@ async function deleteEntity(id) {
   loadEntityList();
 }
 
+
+async function saveNotes(parcelId) {
+  const notes = document.getElementById('detail-notes').value;
+  const { error } = await supabaseClient.from('parcels').update({ notes }).eq('id', parcelId);
+  if (error) { showToast('Error saving notes'); return; }
+  showToast('Notes saved');
+}
+
+async function saveFollowUp(parcelId) {
+  const date = document.getElementById('detail-followup').value;
+  const { error } = await supabaseClient.from('parcels').update({ follow_up_date: date || null }).eq('id', parcelId);
+  if (error) { showToast('Error saving follow-up'); return; }
+  showToast(date ? 'Follow-up set for ' + new Date(date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : 'Follow-up cleared');
+  // Update the status display
+  const statusDiv = document.querySelector('#detail-followup + button + div');
+  if (statusDiv && date) {
+    const overdue = new Date(date) < new Date();
+    statusDiv.style.color = overdue ? 'var(--amber)' : 'var(--accent)';
+    statusDiv.textContent = (overdue ? '⚠ Overdue — was due ' : '✓ Scheduled for ') + new Date(date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  }
+}
+
 async function deleteParcel(parcelId) {
   if (!confirm('Delete this parcel and all its contact logs? This cannot be undone.')) return;
   await supabaseClient.from('contact_logs').delete().eq('parcel_id', parcelId);
@@ -1404,11 +1489,15 @@ async function saveLog() {
   const notes = document.getElementById('log-notes').value.trim();
   const btn = document.getElementById('log-save-btn');
   btn.disabled = true; btn.textContent = 'Saving...';
+  const followUpDate = document.getElementById('log-followup') ? document.getElementById('log-followup').value : null;
   const { error } = await supabaseClient.from('contact_logs').insert({ parcel_id: currentParcelId, broker_id: currentUser.id, contact_type: type, notes });
+  if (followUpDate && currentParcelId) {
+    await supabaseClient.from('parcels').update({ follow_up_date: followUpDate }).eq('id', currentParcelId);
+  }
   btn.disabled = false; btn.textContent = 'Save Log';
   if (error) { showToast('Error saving log'); return; }
   closeModal('log-modal');
-  document.getElementById('log-notes').value = '';
+  document.getElementById('log-notes').value = ''; if(document.getElementById('log-followup')) document.getElementById('log-followup').value = '';
   showToast(type + ' logged');
   openDetailById(currentParcelId);
 }
