@@ -23,10 +23,7 @@ body { font-family: 'DM Sans', sans-serif; background: #CCC8C2; min-height: 100v
 .screen { display: none; }
 .screen.active { display: flex; }
 
-/* ── LOADING ── */
-#loading { align-items: center; justify-content: center; min-height: 100vh; flex-direction: column; gap: 12px; }
-.spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
+
 .loading-logo { font-family: 'DM Mono', monospace; font-size: 24px; color: var(--accent); }
 
 /* ── LOGIN ── */
@@ -246,14 +243,11 @@ tr:hover td { background: #FAFAF8; }
 </head>
 <body>
 
-<!-- LOADING -->
-<div class="screen" id="loading">
-  <div class="loading-logo">trackt</div>
   <div class="spinner"></div>
 </div>
 
 <!-- LOGIN -->
-<div class="screen" id="login" style="display:flex">
+<div class="screen active" id="login">
   <div class="login-left">
     <div class="login-logo">trackt</div>
     <div class="login-logo-sub">Land Pipeline</div>
