@@ -564,22 +564,10 @@ async function firmNav(page) {
     return;
   }
 
+
   if (page === 'brokers') {
     const mc = document.querySelector('.main-content');
-    mc.innerHTML = `
-      <div class="main-header">
-        <div>
-          <div class="main-title">Brokers</div>
-          <div class="main-subtitle" id="br-count">Loading...</div>
-        </div>
-        <button class="main-btn" onclick="firmNav('dashboard')">← Dashboard</button>
-      </div>
-      <div class="card">
-        <table>
-          <thead><tr><th>Broker</th><th>Active Parcels</th><th>Interested</th><th>Follow-ups Due</th><th>Last Active</th><th>Status</th></tr></thead>
-          <tbody id="br-tbody"><tr><td colspan="6" style="text-align:center;color:var(--ink3);padding:24px">Loading...</td></tr></tbody>
-        </table>
-      </div>`;
+    mc.innerHTML = '<div class="main-header"><div><div class="main-title">Brokers</div><div class="main-subtitle" id="br-count">Loading...</div></div><button class="main-btn" onclick="firmNav(\'dashboard\')">← Dashboard</button></div><div class="card"><table><thead><tr><th>Broker</th><th>Active Parcels</th><th>Interested</th><th>Follow-ups Due</th><th>Last Active</th><th>Status</th></tr></thead><tbody id="br-tbody"><tr><td colspan="6" style="text-align:center;color:var(--ink3);padding:24px">Loading...</td></tr></tbody></table></div>';
 
     const { data: parcels } = await supabaseClient
       .from('parcels')
@@ -588,75 +576,46 @@ async function firmNav(page) {
 
     if (!parcels) return;
 
-    // Group by broker
     const brokerMap = {};
-    parcels.forEach(p => {
+    parcels.forEach(function(p) {
       const bid = p.broker_id;
-      if (!brokerMap[bid]) {
-        brokerMap[bid] = {
-          id: bid,
-          name: p.profiles?.full_name || 'Unknown',
-          parcels: [],
-        };
-      }
+      if (!brokerMap[bid]) brokerMap[bid] = { id: bid, name: (p.profiles && p.profiles.full_name) || 'Unknown', parcels: [] };
       brokerMap[bid].parcels.push(p);
     });
 
     const brokers = Object.values(brokerMap);
-    document.getElementById('br-count').textContent = brokers.length + ' broker' + (brokers.length !== 1 ? 's' : '');
+    const brCount = document.getElementById('br-count');
+    if (brCount) brCount.textContent = brokers.length + ' broker' + (brokers.length !== 1 ? 's' : '');
 
     const now = new Date();
     const tbody = document.getElementById('br-tbody');
+    if (!tbody) return;
     if (!brokers.length) {
       tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--ink3);padding:24px">No brokers yet</td></tr>';
       return;
     }
 
-    tbody.innerHTML = brokers.map(b => {
-      const active = b.parcels.filter(p => !['closed','dead'].includes(p.status)).length;
-      const interested = b.parcels.filter(p => p.status === 'interested').length;
-      
-      // Find last activity across all parcels and logs
+    tbody.innerHTML = brokers.map(function(b) {
+      const active = b.parcels.filter(function(p) { return !['closed','dead'].includes(p.status); }).length;
+      const interested = b.parcels.filter(function(p) { return p.status === 'interested'; }).length;
       let lastDate = new Date(0);
-      b.parcels.forEach(p => {
-        const logs = p.contact_logs || [];
-        logs.forEach(l => { const d = new Date(l.created_at); if(d > lastDate) lastDate = d; });
+      b.parcels.forEach(function(p) {
+        (p.contact_logs || []).forEach(function(l) { const d = new Date(l.created_at); if(d > lastDate) lastDate = d; });
         const pd = new Date(p.created_at); if(pd > lastDate) lastDate = pd;
       });
-      
       const daysSince = lastDate.getTime() === 0 ? 999 : Math.floor((now - lastDate) / 86400000);
       const lastStr = daysSince === 0 ? 'Today' : daysSince === 1 ? 'Yesterday' : daysSince + 'd ago';
-      
-      // Follow-ups due
-      const followups = b.parcels.filter(p => {
+      const followups = b.parcels.filter(function(p) {
         if (['closed','dead'].includes(p.status)) return false;
-        const logs = p.contact_logs || [];
-        const lastLog = logs.sort((a,z) => new Date(z.created_at)-new Date(a.created_at))[0];
-        const d = Math.floor((now - new Date(lastLog?.created_at || p.created_at)) / 86400000);
+        const logs = (p.contact_logs || []).sort(function(a,z) { return new Date(z.created_at)-new Date(a.created_at); });
+        const d = Math.floor((now - new Date((logs[0] && logs[0].created_at) || p.created_at)) / 86400000);
         return d >= 30;
       }).length;
-
       const statusColor = daysSince <= 7 ? 'var(--accent)' : daysSince <= 21 ? 'var(--amber)' : 'var(--red)';
       const statusLabel = daysSince <= 7 ? 'Active' : daysSince <= 21 ? 'Slow' : 'Inactive';
       const dotClass = daysSince <= 7 ? 'dot-active' : daysSince <= 21 ? 'dot-slow' : 'dot-inactive';
-      const initials = b.name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
-
-      return \`<tr>
-        <td>
-          <div style="display:flex;align-items:center;gap:10px">
-            <div style="width:30px;height:30px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;flex-shrink:0">\${initials}</div>
-            <div>
-              <div style="font-weight:600;font-size:13px">\${b.name}</div>
-              <div style="font-size:10px;color:var(--ink3)">\${b.parcels.length} total parcels</div>
-            </div>
-          </div>
-        </td>
-        <td style="font-family:'DM Mono',monospace;font-size:16px;font-weight:500;color:var(--accent)">\${active}</td>
-        <td style="font-family:'DM Mono',monospace;font-size:16px;font-weight:500">\${interested}</td>
-        <td style="font-family:'DM Mono',monospace;font-size:16px;font-weight:500;color:\${followups>0?'var(--amber)':'var(--ink3)'}">\${followups}</td>
-        <td style="font-size:12px;color:var(--ink2)">\${lastStr}</td>
-        <td><span class="status-dot \${dotClass}"></span><span style="font-size:12px;font-weight:600;color:\${statusColor}">\${statusLabel}</span></td>
-      </tr>\`;
+      const initials = b.name.split(' ').map(function(n) { return n[0]; }).join('').toUpperCase().slice(0,2);
+      return '<tr><td><div style="display:flex;align-items:center;gap:10px"><div style="width:30px;height:30px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;flex-shrink:0">' + initials + '</div><div><div style="font-weight:600;font-size:13px">' + b.name + '</div><div style="font-size:10px;color:var(--ink3)">' + b.parcels.length + ' total parcels</div></div></div></td><td style="font-family:DM Mono,monospace;font-size:16px;font-weight:500;color:var(--accent)">' + active + '</td><td style="font-family:DM Mono,monospace;font-size:16px;font-weight:500">' + interested + '</td><td style="font-family:DM Mono,monospace;font-size:16px;font-weight:500;color:' + (followups > 0 ? 'var(--amber)' : 'var(--ink3)') + '">' + followups + '</td><td style="font-size:12px;color:var(--ink2)">' + lastStr + '</td><td><span class="status-dot ' + dotClass + '"></span><span style="font-size:12px;font-weight:600;color:' + statusColor + '">' + statusLabel + '</span></td></tr>';
     }).join('');
     return;
   }
