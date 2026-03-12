@@ -515,7 +515,7 @@ async function loadProfile() {
 let firmAllParcels = [];
 let firmCurrentPage = 'dashboard';
 
-async function firmNav(page) {
+async function firmNav(page, parcelId) {
   firmCurrentPage = page;
   // Update sidebar
   document.querySelectorAll('.sb-nav-item').forEach(el => {
@@ -564,6 +564,50 @@ async function firmNav(page) {
     return;
   }
 
+
+
+  if (page === 'parcel-detail' && parcelId) {
+    const mc = document.querySelector('.main-content');
+    mc.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;padding:60px"><div class="spinner"></div></div>';
+
+    const { data: p } = await supabaseClient
+      .from('parcels')
+      .select('*, profiles(full_name), contact_logs(*)')
+      .eq('id', parcelId)
+      .single();
+
+    if (!p) { mc.innerHTML = '<div style="padding:40px;color:var(--ink3)">Parcel not found.</div>'; return; }
+
+    const logs = (p.contact_logs || []).sort(function(a,b) { return new Date(b.created_at) - new Date(a.created_at); });
+    const now = new Date();
+    const days = Math.floor((now - new Date((logs[0] && logs[0].created_at) || p.created_at)) / 86400000);
+    const lastStr = days === 0 ? 'Today' : days === 1 ? 'Yesterday' : days + ' days ago';
+    const overdue = days >= 30 && !['closed','dead'].includes(p.status);
+    const brokerName = (p.profiles && p.profiles.full_name) || 'Unknown';
+
+    const statusOptions = ['contacted','responded','interested','negotiating','closed','dead'];
+    const statusBtns = statusOptions.map(function(s) {
+      return '<button onclick="adminUpdateStatus(\'' + parcelId + '\', \'' + s + '\')" style="border:1.5px solid ' + (p.status===s ? 'var(--accent)' : 'var(--border)') + ';background:' + (p.status===s ? 'var(--accent-light)' : 'var(--surface)') + ';color:' + (p.status===s ? 'var(--accent)' : 'var(--ink2)') + ';border-radius:7px;padding:6px 12px;font-size:11px;font-weight:600;font-family:DM Sans,sans-serif;cursor:pointer" id="sbtn-' + s + '">' + capitalize(s) + '</button>';
+    }).join('');
+
+    const timelineHtml = logs.length === 0 ? '<div style="font-size:12px;color:var(--ink3)">No contact logged yet.</div>' :
+      logs.map(function(log, i) {
+        return '<div style="display:flex;gap:10px;margin-bottom:12px"><div style="display:flex;flex-direction:column;align-items:center"><div style="width:9px;height:9px;border-radius:50%;background:' + (i===0?'var(--accent)':'var(--ink3)') + ';flex-shrink:0;margin-top:3px"></div><div style="width:2px;flex:1;background:var(--border);min-height:16px"></div></div><div style="flex:1;padding-bottom:4px"><div style="font-size:12px;font-weight:600;color:var(--ink)">' + log.contact_type + '</div><div style="font-size:11px;color:var(--ink2);margin-top:1px">' + (log.notes||'') + '</div><div style="font-size:10px;color:var(--ink3);margin-top:2px;font-family:DM Mono,monospace">' + new Date(log.created_at).toLocaleDateString('en-US',{month:'short',day:'2-digit',year:'numeric'}) + '</div></div></div>';
+      }).join('');
+
+    mc.innerHTML = '<div class="main-header"><div><div style="font-size:12px;color:var(--ink3);margin-bottom:4px;cursor:pointer" onclick="firmNav(\'parcels\')">← All Parcels</div><div class="main-title">' + p.address + '</div><div class="main-subtitle">' + (p.county||'') + ', FL</div></div><span class="pill pill-' + p.status + '" style="font-size:11px;padding:5px 12px;align-self:center" id="detail-pill">' + capitalize(p.status) + '</span></div>'
+    + '<div style="display:grid;grid-template-columns:1fr 340px;gap:16px">'
+    + '<div>'
+    + '<div class="card" style="margin-bottom:16px"><div class="card-header"><div class="card-title">Parcel Info</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div style="background:var(--surface);padding:14px"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.5px">Owner</div><div style="font-size:14px;font-weight:600;margin-top:3px">' + (p.owner_name||'—') + '</div></div><div style="background:var(--surface);padding:14px"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.5px">Acreage</div><div style="font-size:14px;font-weight:600;font-family:DM Mono,monospace;margin-top:3px">' + (p.acreage||'—') + '</div></div><div style="background:var(--surface);padding:14px"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.5px">Parcel ID</div><div style="font-size:14px;font-weight:600;font-family:DM Mono,monospace;margin-top:3px">' + (p.parcel_id||'—') + '</div></div><div style="background:var(--surface);padding:14px"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.5px">Broker</div><div style="font-size:14px;font-weight:600;margin-top:3px">' + brokerName + '</div></div><div style="background:var(--surface);padding:14px"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.5px">Last Contact</div><div style="font-size:14px;font-weight:600;margin-top:3px;color:' + (overdue?'var(--amber)':'var(--ink)') + '">' + lastStr + (overdue?' ⚠':'') + '</div></div><div style="background:var(--surface);padding:14px"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.5px">Added</div><div style="font-size:14px;font-weight:600;margin-top:3px">' + new Date(p.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) + '</div></div></div></div>'
+    + '<div class="card"><div class="card-header"><div class="card-title">Update Status</div></div><div style="padding:14px;display:flex;flex-wrap:wrap;gap:7px" id="status-btns">' + statusBtns + '</div></div>'
+    + '</div>'
+    + '<div class="card"><div class="card-header"><div class="card-title">Contact History</div><div style="font-size:11px;color:var(--ink3)">' + logs.length + ' contacts</div></div><div style="padding:14px">' + timelineHtml + '<div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Added to Pipeline</div><div style="font-size:11px;color:var(--ink2)">' + new Date(p.created_at).toLocaleDateString('en-US',{month:'short',day:'2-digit',year:'numeric'}) + '</div></div></div></div>'
+    + '</div>';
+
+    // Store current parcel id for status updates
+    window._adminParcelId = parcelId;
+    return;
+  }
 
   if (page === 'brokers') {
     const mc = document.querySelector('.main-content');
@@ -696,6 +740,22 @@ function apRender(parcels) {
       <td style="font-size:12px;font-family:'DM Mono',monospace;text-align:center">${logs.length}</td>
     </tr>`;
   }).join('');
+}
+
+
+async function adminUpdateStatus(parcelId, status) {
+  await supabaseClient.from('parcels').update({ status }).eq('id', parcelId);
+  await supabaseClient.from('contact_logs').insert({ parcel_id: parcelId, broker_id: currentUser.id, contact_type: 'Status Change', notes: 'Status updated to ' + capitalize(status) });
+  // Update UI
+  document.querySelectorAll('[id^="sbtn-"]').forEach(function(btn) {
+    const s = btn.id.replace('sbtn-','');
+    btn.style.borderColor = s === status ? 'var(--accent)' : 'var(--border)';
+    btn.style.background = s === status ? 'var(--accent-light)' : 'var(--surface)';
+    btn.style.color = s === status ? 'var(--accent)' : 'var(--ink2)';
+  });
+  const pill = document.getElementById('detail-pill');
+  if (pill) { pill.className = 'pill pill-' + status; pill.textContent = capitalize(status); }
+  showToast('Status updated to ' + capitalize(status));
 }
 
 // ── AUTH ──
