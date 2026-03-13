@@ -1439,10 +1439,6 @@ async function saveParcel() {
   const address = document.getElementById('new-address').value.trim();
   if (!address) { showToast('Please enter an address'); return; }
   const btn = document.getElementById('add-save-btn');
-  const role = document.getElementById('new-entity-role').value;
-  const price = document.getElementById('new-price').value;
-  if (!role) { showToast('Please select Buying or Selling'); return; }
-  if (!price) { showToast('Please enter a price'); return; }
   btn.disabled = true; btn.textContent = 'Saving...';
   const { error } = await supabaseClient.from('parcels').insert({
     broker_id: currentUser.id,
@@ -1459,11 +1455,17 @@ async function saveParcel() {
     status: 'contacted'
   });
   btn.disabled = false; btn.textContent = 'Add Parcel';
-  if (error) { showToast('Error saving parcel'); return; }
+  if (error) { console.error('Save error:', error); showToast('Error: ' + (error.message || 'Could not save parcel')); return; }
   closeModal('add-modal');
-  ['new-address','new-county','new-acres','new-owner','new-pid','new-coords','new-lat','new-lng','new-entity','new-entity-role','new-price'].forEach(id => document.getElementById(id).value = ''); document.getElementById('coords-preview').style.display='none'; document.getElementById('price-field').style.display='none';
+  ['new-address','new-county','new-acres','new-owner','new-pid','new-coords','new-lat','new-lng','new-entity','new-entity-role','new-price'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  const cpEl = document.getElementById('coords-preview'); if(cpEl) cpEl.style.display='none';
+  const pfEl = document.getElementById('price-field'); if(pfEl) pfEl.style.display='none';
   showToast('Parcel added successfully');
-  loadBrokerParcels();
+  if (currentProfile && currentProfile.role === 'admin') {
+    loadFirmDashboard();
+  } else {
+    loadBrokerParcels();
+  }
 }
 
 async function saveLog() {
