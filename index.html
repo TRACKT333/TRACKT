@@ -228,7 +228,7 @@ tr:hover td { background: #FAFAF8; }
 .act-time { font-size: 10px; color: var(--ink3); font-family: 'DM Mono', monospace; white-space: nowrap; margin-top: 2px; }
 
 /* ── MODALS ── */
-.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 400; align-items: flex-end; justify-content: center; padding: 20px; }
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 400; align-items: center; justify-content: center; padding: 20px; overflow-y: auto; }
 .modal-overlay.open { display: flex; }
 .modal { background: var(--surface); border-radius: 18px 18px 14px 14px; width: 100%; max-width: 375px; padding: 22px 18px 28px; animation: slideUp 0.22s ease; max-height: 85vh; overflow-y: auto; }
 @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
@@ -286,6 +286,29 @@ tr:hover td { background: #FAFAF8; }
         <span id="auth-switch-text">No account? </span>
         <button onclick="toggleAuthMode()" id="auth-switch-link" style="background:none;border:none;color:var(--accent);font-weight:500;font-size:12px;cursor:pointer;font-family:DM Sans,sans-serif;padding:0">Create one</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- INVITE SIGNUP SCREEN -->
+<div class="screen" id="invite">
+  <div class="login-left">
+    <div class="login-brand">trackt</div>
+    <div class="login-tagline">land pipeline</div>
+    <div style="margin-top:32px;font-size:13px;color:rgba(255,255,255,0.5);line-height:1.7">You've been invited to join your firm's land pipeline.</div>
+  </div>
+  <div class="login-right">
+    <div class="login-form">
+      <div style="margin-bottom:24px">
+        <div style="font-size:22px;font-weight:700;color:var(--ink);margin-bottom:6px">Join Trackt</div>
+        <div style="font-size:13px;color:var(--ink2)" id="invite-firm-label">You're joining as a broker</div>
+      </div>
+      <div class="form-field"><label>Full Name</label><input type="text" id="invite-name" placeholder="Your full name" autocomplete="name"></div>
+      <div class="form-field"><label>Email</label><input type="email" id="invite-email" placeholder="your@email.com" autocomplete="email"></div>
+      <div class="form-field"><label>Password</label><input type="password" id="invite-password" placeholder="Choose a password" autocomplete="new-password"></div>
+      <div id="invite-error" class="login-error"></div>
+      <button class="login-btn" id="invite-btn" onclick="signUpFromInvite()">Create Account</button>
+      <div style="font-size:12px;color:var(--ink3);text-align:center;margin-top:14px">Already have an account? <a onclick="showScreen('login')" style="color:var(--accent);cursor:pointer;font-weight:500">Sign in</a></div>
     </div>
   </div>
 </div>
@@ -1098,8 +1121,15 @@ async function firmNav(page, parcelId) {
 
   if (page === 'settings') {
     const mc = document.querySelector('.main-content');
-    mc.innerHTML = '<div class="main-header"><div><div class="main-title">Settings</div><div class="main-subtitle">Manage your firm configuration</div></div><button class="main-btn" onclick="firmNav(\'dashboard\')">&#8592; Dashboard</button></div><div class="card" style="max-width:560px"><div class="card-header"><div class="card-title">LLC Entities</div><div style="font-size:11px;color:var(--ink3)">Entities brokers can select when adding parcels</div></div><div style="padding:14px"><div style="display:flex;gap:8px;margin-bottom:16px"><input type="text" id="new-entity-input" placeholder="e.g. JAG Land Holdings LLC" style="flex:1;border:1.5px solid var(--border);border-radius:9px;padding:9px 13px;font-size:13px;font-family:DM Sans,sans-serif;color:var(--ink);outline:none;background:var(--surface)"><button class="main-btn" onclick="addEntity()">+ Add</button></div><div id="entity-list"><div style="text-align:center;color:var(--ink3);padding:20px;font-size:13px">Loading...</div></div></div></div>';
+    mc.innerHTML = '<div class="main-header"><div><div class="main-title">Settings</div><div class="main-subtitle">Manage your firm configuration</div></div><button class="main-btn" onclick="firmNav(\'dashboard\')">&#8592; Dashboard</button></div>'
+      + '<div class="card" style="max-width:560px;margin-bottom:13px"><div class="card-header"><div class="card-title">Invite Brokers</div><div style="font-size:11px;color:var(--ink3)">Share this link with your brokers</div></div><div style="padding:14px">'
+      + '<div style="background:var(--bg);border:1.5px solid var(--border);border-radius:9px;padding:10px 14px;font-size:12px;font-family:DM Mono,monospace;color:var(--ink2);word-break:break-all;margin-bottom:10px" id="invite-url-display">Generating...</div>'
+      + '<div style="display:flex;gap:8px"><button class="main-btn" onclick="copyInviteLink()">Copy Link</button><button class="main-btn" style="background:var(--surface);color:var(--ink2);border:1.5px solid var(--border)" onclick="regenerateInvite()">New Code</button></div>'
+      + '<div style="font-size:11px;color:var(--ink3);margin-top:8px">Brokers who open this link will be set up as brokers under JAG Acquisitions automatically.</div>'
+      + '</div></div>'
+      + '<div class="card" style="max-width:560px"><div class="card-header"><div class="card-title">LLC Entities</div><div style="font-size:11px;color:var(--ink3)">Entities brokers can select when adding parcels</div></div><div style="padding:14px"><div style="display:flex;gap:8px;margin-bottom:16px"><input type="text" id="new-entity-input" placeholder="e.g. JAG Land Holdings LLC" style="flex:1;border:1.5px solid var(--border);border-radius:9px;padding:9px 13px;font-size:13px;font-family:DM Sans,sans-serif;color:var(--ink);outline:none;background:var(--surface)"><button class="main-btn" onclick="addEntity()">+ Add</button></div><div id="entity-list"><div style="text-align:center;color:var(--ink3);padding:20px;font-size:13px">Loading...</div></div></div></div>';
     loadEntityList();
+    loadInviteUrl();
     return;
   }
 
@@ -1345,6 +1375,80 @@ async function adminUpdateStatus(parcelId, status) {
   showToast('Status updated to ' + capitalize(status));
 }
 
+
+// ── INVITE SYSTEM ──
+const INVITE_CODE_KEY = 'trackt_invite_code';
+
+function getInviteCode() {
+  // Store a stable invite code in Supabase profiles for this admin, or use a fixed one
+  return 'JAG2026';
+}
+
+function getInviteUrl() {
+  return window.location.origin + window.location.pathname + '?invite=' + getInviteCode();
+}
+
+async function copyInviteLink() {
+  const url = getInviteUrl();
+  try {
+    await navigator.clipboard.writeText(url);
+    showToast('Invite link copied!');
+  } catch(e) {
+    showToast('Link: ' + url);
+  }
+}
+
+function regenerateInvite() {
+  showToast('For security, contact support to change your invite code');
+}
+
+function loadInviteUrl() {
+  const el = document.getElementById('invite-url-display');
+  if (el) el.textContent = getInviteUrl();
+}
+
+async function signUpFromInvite() {
+  const name = document.getElementById('invite-name').value.trim();
+  const email = document.getElementById('invite-email').value.trim();
+  const password = document.getElementById('invite-password').value;
+  const errEl = document.getElementById('invite-error');
+  const btn = document.getElementById('invite-btn');
+
+  errEl.style.display = 'none';
+  if (!name) { errEl.textContent = 'Please enter your name'; errEl.style.display = 'block'; return; }
+  if (!email) { errEl.textContent = 'Please enter your email'; errEl.style.display = 'block'; return; }
+  if (!password || password.length < 6) { errEl.textContent = 'Password must be at least 6 characters'; errEl.style.display = 'block'; return; }
+
+  btn.disabled = true; btn.textContent = 'Creating account...';
+  const { data, error } = await supabaseClient.auth.signUp({ email, password });
+  if (error) { errEl.textContent = error.message; errEl.style.display = 'block'; btn.disabled = false; btn.textContent = 'Create Account'; return; }
+
+  if (data.user) {
+    // Create profile as broker under JAG
+    await supabaseClient.from('profiles').insert({
+      id: data.user.id,
+      full_name: name,
+      role: 'broker',
+      firm: 'JAG Acquisitions'
+    });
+    btn.textContent = 'Account created!';
+    showToast('Welcome, ' + name + '! Check your email to confirm your account.');
+    setTimeout(function() { showScreen('login'); }, 2000);
+  }
+}
+
+function checkInviteParam() {
+  const params = new URLSearchParams(window.location.search);
+  const invite = params.get('invite');
+  if (invite && invite.toUpperCase() === 'JAG2026') {
+    const label = document.getElementById('invite-firm-label');
+    if (label) label.textContent = 'You are joining JAG Acquisitions as a broker';
+    showScreen('invite');
+    return true;
+  }
+  return false;
+}
+
 // ── AUTH ──
 function toggleAuthMode() {
   isSignUp = !isSignUp;
@@ -1528,9 +1632,18 @@ async function updateStatus(parcelId, status, el) {
 }
 
 // ── MODALS ──
-function openAddModal() { document.getElementById('add-modal').classList.add('open'); loadEntities(); }
+function openAddModal() {
+  const modal = document.getElementById('add-modal');
+  if (!modal) { showToast('Error: modal not found'); return; }
+  modal.classList.add('open');
+  modal.style.display = 'flex';
+  loadEntities();
+}
 function openLogModal() { document.getElementById('log-modal').classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function closeModal(id) {
+  const el = document.getElementById(id);
+  if (el) { el.classList.remove('open'); el.style.display = ''; }
+}
 function selectType(el) { document.querySelectorAll('.modal-type').forEach(t => t.classList.remove('selected')); el.classList.add('selected'); }
 
 async function saveParcel() {
